@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>研发OA综合平台 · 产品原型</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- 启动预判：先于外部 JS 执行，避免刷新时登录页闪烁 -->
+    <script>
+      (function () {
+        try {
+          var raw = sessionStorage.getItem("oa_session");
+          if (raw && JSON.parse(raw)) {
+            document.getElementById("view-login").style.display = "none";
+            document.getElementById("app").style.display = "flex";
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- ============ 登录 ============ -->
+    <div id="view-login" style="display: none">
+      <div class="lg-brand">前卫表业</div>
+      <div class="lg-wm" id="lgWm"></div>
+      <div class="lg-main">
+        <h1>研发OA综合平台</h1>
+        <div class="en">R&amp;D OA Integrated Platform</div>
+        <div class="login-box">
+          <div class="login-tip" id="loginTip">
+            请先登录后才能访问本系统（未登录已拦截子系统访问）
+          </div>
+          <label class="req">用户名 Account</label>
+          <input id="lgUser" value="" placeholder="请输入工号 / 账号" />
+          <label class="req">密码 Password</label>
+          <input id="lgPwd" type="password" value="" placeholder="请输入密码" />
+          <button class="lg-btn" onclick="doLogin()">登 录</button>
+          <div class="lg-warm">
+            温馨提示：如密码遗失，请联系工程技术研究中心！
+          </div>
+          <div class="lg-demo">
+            演示账号（点击自动填充账号与密码，角色由工号自动识别）：
+            <div id="lgDemoList" class="lg-demo-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 应用 ============ -->
+    <div id="app" style="display: none">
+      <div class="header">
+        <div class="logo" onclick="selectModule('home')">
+          <svg
+            class="logo-icon"
+            viewBox="0 0 1024 1024"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M91.443 565.453v-60.109c0-35.533 12.8-63.386 52.634-63.386s52.633 27.853 52.633 63.386v59.187c0 19.968-4.915 40.96-21.196 54.477 3.072 6.656 15.872 6.451 17.51 6.451v21.914c-24.269 0-34.406-11.571-39.731-20.07-3.38 0.409-6.656 0.511-9.83 0.511-36.455 0.103-52.02-26.112-52.02-62.361z m69.12 8.09v-77.21c0-11.469-2.56-26.42-16.486-26.42-13.824 0-16.487 15.053-16.487 26.42v77.21c0 11.468 2.56 26.316 16.487 26.316 14.131 0 16.486-14.643 16.486-26.317z m64.922 54.271l-24.781-178.688h30.822l11.162 118.375 15.258-118.375h26.521l14.95 117.658 11.572-117.658h31.027l-24.986 178.79h-30.924l-14.95-116.94-14.746 116.94h-30.925z m286.105-62.668v-59.188c0-35.328 11.981-63.385 51.815-63.385 37.069 0 50.176 25.088 50.176 59.597v15.36h-35.533v-16.487c0-13.312-0.922-30.617-14.643-30.617-13.62 0-15.667 15.36-15.667 26.419v77.21c0 11.161 1.945 26.316 15.667 26.316 13.21 0 14.848-16.793 14.848-30.72v-18.33h35.328l-0.103 15.053c-0.512 32.154-11.264 61.85-50.073 61.85-39.731 0.102-51.815-28.57-51.815-63.078z m109.159 8.396l36.659-7.065c0 15.667 1.331 34.201 13.824 34.201 8.5 0 10.752-6.144 10.752-13.721 0-14.95-10.752-28.16-21.197-37.376l-11.264-9.523c-14.131-11.879-28.672-24.986-28.672-50.79 0-29.287 20.378-47.105 50.483-47.105 25.396 0 45.568 20.787 45.568 46.08 0 0.615-0.102 1.434-0.102 4.301l-37.376 5.12c0-2.253 0.307-4.506 0.307-7.27 0-8.397-1.843-20.583-11.469-20.583-8.499 0-11.878 8.192-11.878 15.667 0 12.8 6.758 20.788 15.258 27.956 4.608 3.89 9.01 7.577 13.21 11.366 18.329 16.384 32.153 33.178 32.153 60.826 0 25.6-21.095 42.7-45.978 42.7-34.201 0-48.947-26.828-50.278-54.784z m106.291 0l36.66-7.065c0 15.667 1.33 34.201 13.823 34.201 8.5 0 10.752-6.144 10.752-13.721 0-14.95-10.752-28.16-21.197-37.376l-11.264-9.523c-14.13-11.879-28.672-24.986-28.672-50.79 0-29.287 20.378-47.105 50.484-47.105 25.395 0 45.568 20.787 45.568 46.08 0 0.615-0.103 1.434-0.103 4.301l-37.376 5.12c0-2.253 0.307-4.506 0.307-7.27 0-8.397-1.843-20.583-11.468-20.583-8.5 0-11.879 8.192-11.879 15.667 0 12.8 6.759 20.788 15.258 27.956 4.608 3.89 9.011 7.577 13.21 11.366 18.329 16.384 32.153 33.178 32.153 60.826 0 25.6-21.094 42.7-45.978 42.7-34.201 0-48.844-26.828-50.278-54.784z m103.526-8.396v-59.188c0-35.328 11.981-63.385 51.815-63.385 37.069 0 50.176 25.088 50.176 59.597v15.36h-35.533v-16.487c0-13.312-0.922-30.617-14.643-30.617-13.62 0-15.667 15.36-15.667 26.419v77.21c0 11.161 1.945 26.316 15.667 26.316 13.21 0 14.848-16.793 14.745-30.72v-18.33h35.328l-0.102 15.053c-0.512 32.154-11.264 61.85-50.074 61.85-39.628 0.102-51.712-28.57-51.712-63.078z m-476.774 57.548c-3.38 5.53-11.162 6.964-17.306 3.072-6.144-3.788-8.396-11.366-4.915-16.896L471.86 381.747c3.38-5.53 11.162-6.963 17.306-3.072 6.144 3.789 8.397 11.367 4.915 16.896L353.792 622.694z m54.989 0c-3.38 5.53-11.162 6.964-17.306 3.072-6.144-3.788-8.397-11.366-4.915-16.896l140.288-227.123c3.38-5.53 11.162-6.963 17.306-3.072 6.144 3.789 8.396 11.367 4.915 16.896L408.78 622.694z"
+              fill="#ffffff"
+            ></path>
+          </svg>
+          研发OA综合平台
+        </div>
+        <div class="topmenu" id="topmenu"></div>
+        <div class="h-right">
+          <div class="top-clock" id="topClock">--:--:--</div>
+          <div
+            class="bell"
+            title="待办提醒"
+            onclick="window.showLoginTodoModal && window.showLoginTodoModal(true)"
+          >
+            🔔<span class="num" style="display:none">0</span>
+          </div>
+          <div class="avatar-wrap" onclick="toggleAvatar(event)">
+            <div class="avatar" id="avatarBox">张</div>
+          </div>
+          <div class="avatar-menu" id="avatarMenu" style="display: none">
+            <div class="am-name" id="amName">张工 (8001)</div>
+            <div class="am-role" id="amRole">角色：一般人员</div>
+            <div class="am-div"></div>
+            <div class="am-item" onclick="logout()">切换角色 / 退出登录</div>
+          </div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="sidebar" id="sidebar">
+          <div class="side-head">
+            <span class="side-title" id="sideTitle">研发公共</span>
+            <button
+              class="collapse-btn"
+              onclick="toggleSide()"
+              title="收起/展开"
+            >
+              ≡
+            </button>
+          </div>
+          <div class="side-nav" id="sideNav"></div>
+        </div>
+        <div class="main">
+          <div class="crumb" id="crumb"></div>
+          <div class="content" id="content"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-mask" id="mask"><div class="modal" id="modal"></div></div>
+    <div class="toast" id="toast"></div>
+
+    <script src="js/modules/strings.js"></script>
+    <script src="js/modules/helpers.js"></script>
+    <script src="js/modules/ui.js"></script>
+
+    <!-- SheetJS：用于 Excel 导入解析 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- 数据层：基座 + 业务模块（必须在 auth.js 之前，因为 auth.js 依赖 ROLES/MENUS/ALL_ACTIONS 等常量） -->
+    <script src="js/modules/config.js"></script>
+    <script src="js/modules/config-assets.js"></script>
+    <script src="js/modules/config-pa.js"></script>
+    <script src="js/modules/config-std.js"></script>
+    <script src="js/modules/config-ec.js"></script>
+
+    <script src="js/modules/auth.js"></script>
+    <script src="js/modules/router.js"></script>
+
+    <!-- 视图层：业务模块先注册，基座最后填充 VIEWS.home 和通用工具 -->
+    <script src="js/modules/views-std.js"></script>
+    <script src="js/modules/views-ec.js"></script>
+    <script src="js/modules/views-pa.js"></script>
+    <script src="js/modules/views-sys.js"></script>
+    <script src="js/modules/views-assets.js"></script>
+    <script src="js/modules/views.js"></script>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
