@@ -2,7 +2,7 @@
 /* 包含：考核人员库 / 模板 / 任务导入 / 考核表 / 结果 全流程种子与 CRUD */
 /* 依赖基座 config.js 中的 _loadArr / _save 辅助函数 */
 
-/* ---------- 绩效管理模块 sessionStorage Key ---------- */
+/* ---------- 绩效管理模块 localStorage Key ---------- */
 const OA_PA_TEMPLATES = "oa_pa_tpls";    // 考核表单模板（含历史版本）
 const OA_PA_TASKS = "oa_pa_tasks";       // 项目经理导入的月度计划任务 & 完成结果
 const OA_PA_TABLES = "oa_pa_tables";     // 考核表与打分

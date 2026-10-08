@@ -382,7 +382,7 @@ function doDeleteStd(id) { window.deleteStandard(id); closeModal(); toast("已�
 function confirmResetAllStd() {
   openModal(modalContent("恢复标准库默认数据",
     `<p>将清除所有标准条目、字段字典、操作日志，恢复为系统默认的 8 条种子数据。</p>
-     <p class="small muted">当前 sessionStorage 中的标准库数据将被覆盖（不影响绩效管理等其他模块）。</p>`,
+     <p class="small muted">当前 localStorage 中的标准库数据将被覆盖（不影响绩效管理等其他模块）。</p>`,
     `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", `doResetAllStd()`)}`));
 }
 

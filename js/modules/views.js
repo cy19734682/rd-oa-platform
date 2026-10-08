@@ -261,7 +261,7 @@ function updateBellBadge() {
 function showLoginTodoModal(force) {
   if (!force) {
     try {
-      if (sessionStorage.getItem("oa_todo_dismissed") === "1") return;
+      if (localStorage.getItem("oa_todo_dismissed") === "1") return;
     } catch (e) {}
   }
   const todos = _collectTodos();
@@ -269,7 +269,7 @@ function showLoginTodoModal(force) {
   const name = window.CURR_ACCT_NAME || "";
   const count = todos.length;
   const list = todos.slice(0, 10).map((t) => `
-    <div class="home-todo" style="cursor:pointer" onclick="closeModal();sessionStorage.setItem('oa_todo_dismissed','1');${t.onClick}">
+    <div class="home-todo" style="cursor:pointer" onclick="closeModal();localStorage.setItem('oa_todo_dismissed','1');${t.onClick}">
       <div class="home-todo-icon" style="background:${t.color}1a;color:${t.color}">${t.icon}</div>
       <div class="home-todo-body">
         <div class="home-todo-title">${_escape(t.title)}</div>
@@ -283,7 +283,7 @@ function showLoginTodoModal(force) {
     </div>
     <div class="home-todos" style="max-height:60vh;overflow-y:auto">${list}</div>
   `;
-  const foot = `<button class="btn" onclick="sessionStorage.setItem('oa_todo_dismissed','1');closeModal()">知道了</button>`;
+  const foot = `<button class="btn" onclick="localStorage.setItem('oa_todo_dismissed','1');closeModal()">知道了</button>`;
   openModal(modalContent(`🔔 待办提醒（${count}）`, body, foot), "520px");
 }
 

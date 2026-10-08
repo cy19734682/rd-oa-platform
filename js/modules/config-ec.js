@@ -271,7 +271,7 @@ let EC_LOGS = null;
 /* ---------- 加载 / 保存 ---------- */
 function loadEcCases() {
   try {
-    const raw = sessionStorage.getItem(OA_EC_CASES);
+    const raw = localStorage.getItem(OA_EC_CASES);
     if (raw) { EC_CASES = JSON.parse(raw); } else { EC_CASES = JSON.parse(JSON.stringify(DEFAULT_EC_CASES)); }
   } catch (e) { EC_CASES = JSON.parse(JSON.stringify(DEFAULT_EC_CASES)); }
   _save(OA_EC_CASES, EC_CASES);
@@ -279,7 +279,7 @@ function loadEcCases() {
 function saveEcCases() { _save(OA_EC_CASES, EC_CASES); }
 function loadEcLogs() {
   try {
-    const raw = sessionStorage.getItem(OA_EC_LOGS);
+    const raw = localStorage.getItem(OA_EC_LOGS);
     if (raw) { EC_LOGS = JSON.parse(raw); } else { EC_LOGS = JSON.parse(JSON.stringify(DEFAULT_EC_LOGS)); }
   } catch (e) { EC_LOGS = JSON.parse(JSON.stringify(DEFAULT_EC_LOGS)); }
   _save(OA_EC_LOGS, EC_LOGS);
@@ -518,8 +518,8 @@ function logEcOp(op, caseId, note) {
 
 /* ---------- 恢复默认 ---------- */
 function resetAllEc() {
-  sessionStorage.removeItem(OA_EC_CASES);
-  sessionStorage.removeItem(OA_EC_LOGS);
+  localStorage.removeItem(OA_EC_CASES);
+  localStorage.removeItem(OA_EC_LOGS);
   loadEcCases();
   loadEcLogs();
 }

@@ -12,7 +12,7 @@
     <script>
       (function () {
         try {
-          var raw = sessionStorage.getItem("oa_session");
+          var raw = localStorage.getItem("oa_session");
           if (raw && JSON.parse(raw)) {
             document.getElementById("view-login").style.display = "none";
             document.getElementById("app").style.display = "flex";
@@ -43,6 +43,11 @@
           <div class="lg-demo">
             演示账号（点击自动填充账号与密码，角色由工号自动识别）：
             <div id="lgDemoList" class="lg-demo-list"></div>
+          </div>
+          <div class="lg-manual-entry">
+            <a href="manual.html" target="_blank" rel="noopener">
+              📖 查看操作说明书
+            </a>
           </div>
         </div>
       </div>

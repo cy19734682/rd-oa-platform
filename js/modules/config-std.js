@@ -2,7 +2,7 @@
 /* 包含：标准 / 字典 / 日志 种子数据与全量 CRUD */
 /* 依赖基座 config.js 中的 _loadArr / _save 辅助函数 */
 
-/* ---------- 标准库模块 sessionStorage Key ---------- */
+/* ---------- 标准库模块 localStorage Key ---------- */
 const OA_STD_STANDARDS = "oa_std_standards";
 const OA_SYS_DICT = "oa_sys_dict";
 const OA_SYS_DICT_META = "oa_sys_dict_meta";
@@ -184,7 +184,7 @@ function loadStandards() { STANDARDS = _loadArr(OA_STD_STANDARDS, DEFAULT_STANDA
 function saveStandards() { _save(OA_STD_STANDARDS, STANDARDS); }
 function loadStdDicts() {
   try {
-    const raw = sessionStorage.getItem(OA_SYS_DICT);
+    const raw = localStorage.getItem(OA_SYS_DICT);
     if (raw) { SYS_DICT = JSON.parse(raw); } else { SYS_DICT = JSON.parse(JSON.stringify(DEFAULT_SYS_DICT)); }
   } catch (e) { SYS_DICT = JSON.parse(JSON.stringify(DEFAULT_SYS_DICT)); }
   _save(OA_SYS_DICT, SYS_DICT);
@@ -192,7 +192,7 @@ function loadStdDicts() {
 function saveStdDicts() { _save(OA_SYS_DICT, SYS_DICT); }
 function loadDictMeta() {
   try {
-    const raw = sessionStorage.getItem(OA_SYS_DICT_META);
+    const raw = localStorage.getItem(OA_SYS_DICT_META);
     if (raw) { DICT_META = JSON.parse(raw); } else { DICT_META = JSON.parse(JSON.stringify(DEFAULT_DICT_META)); }
   } catch (e) { DICT_META = JSON.parse(JSON.stringify(DEFAULT_DICT_META)); }
   _save(OA_SYS_DICT_META, DICT_META);
@@ -225,10 +225,10 @@ function loadStdLogs() { STD_LOGS = _loadArr(OA_STD_LOGS, DEFAULT_STD_LOGS); _sa
 function saveStdLogs() { _save(OA_STD_LOGS, STD_LOGS); }
 function loadAllStd() { loadStandards(); loadStdDicts(); loadDictMeta(); loadStdLogs(); }
 function resetAllStd() {
-  sessionStorage.removeItem(OA_STD_STANDARDS);
-  sessionStorage.removeItem(OA_SYS_DICT);
-  sessionStorage.removeItem(OA_SYS_DICT_META);
-  sessionStorage.removeItem(OA_STD_LOGS);
+  localStorage.removeItem(OA_STD_STANDARDS);
+  localStorage.removeItem(OA_SYS_DICT);
+  localStorage.removeItem(OA_SYS_DICT_META);
+  localStorage.removeItem(OA_STD_LOGS);
   loadAllStd();
 }
 

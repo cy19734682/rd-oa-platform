@@ -731,10 +731,10 @@ function doSysDictAddGroup() {
     if (typeof window.saveDictMeta === 'function') window.saveDictMeta();
   }
   // 同时确保字典项存储里也有这个 key（空数组）
-  const cur = sessionStorage.getItem('oa_sys_dict');
+  const cur = localStorage.getItem('oa_sys_dict');
   let all = cur ? JSON.parse(cur) : {};
   if (!all[k]) all[k] = [];
-  sessionStorage.setItem('oa_sys_dict', JSON.stringify(all));
+  localStorage.setItem('oa_sys_dict', JSON.stringify(all));
   toast('已新增字典组'); closeModal(); replaceView();
 }
 
@@ -785,11 +785,11 @@ function doSysDictDelGroup(key) {
     if (typeof window.saveDictMeta === 'function') window.saveDictMeta();
   }
   // 同步删除字典项存储中的对应 key
-  const cur = sessionStorage.getItem('oa_sys_dict');
+  const cur = localStorage.getItem('oa_sys_dict');
   if (cur) {
     let all = JSON.parse(cur);
     delete all[key];
-    sessionStorage.setItem('oa_sys_dict', JSON.stringify(all));
+    localStorage.setItem('oa_sys_dict', JSON.stringify(all));
   }
   closeModal(); toast('已删除'); replaceView();
 }
@@ -841,14 +841,14 @@ function doSysDictEditItem(key, oldVal) {
   const newVal = (document.getElementById('sd_new_val')?.value || '').trim();
   if (!newVal) { toast('请填写名称'); return; }
   if (newVal === oldVal) { closeModal(); openSysDictView(key); return; }
-  const cur = sessionStorage.getItem('oa_sys_dict');
+  const cur = localStorage.getItem('oa_sys_dict');
   let all = cur ? JSON.parse(cur) : {};
   let arr = all[key] || [];
   if (arr.includes(newVal)) { toast('新名称已存在'); return; }
   arr = arr.map((x) => x === oldVal ? newVal : x);
   arr = [...new Set(arr)];
   all[key] = arr;
-  sessionStorage.setItem('oa_sys_dict', JSON.stringify(all));
+  localStorage.setItem('oa_sys_dict', JSON.stringify(all));
   closeModal(); toast('已更新'); openSysDictView(key);
 }
 
@@ -865,7 +865,7 @@ function doSysDictDelItem(key, val) {
   );
 }
 function doResetSysDict() {
-  sessionStorage.removeItem("oa_sys_dict");
+  localStorage.removeItem("oa_sys_dict");
   if (typeof window.loadAllStd === "function") window.loadAllStd();
   closeModal(); toast("已恢复默认字典"); replaceView();
 }

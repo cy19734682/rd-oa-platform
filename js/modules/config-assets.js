@@ -4,12 +4,12 @@
 
 /* ================================================================
 *  过程资产模块：开发规范 / 文档模板 / 设计规范 / 评审 Checklist
-*  统一使用 sessionStorage 持久化，关闭浏览器标签页即清除
+*  统一使用 localStorage 持久化，关闭浏览器标签页即清除
 * ================================================================ */
 
 /* ---------- 开发规范 ---------- */
 
-/** 默认种子：首次启动写入 sessionStorage */
+/** 默认种子：首次启动写入 localStorage */
 const DEFAULT_ASSET_SPECS = [
   {
     id: "spec_001",
@@ -73,7 +73,7 @@ let ASSET_SPECS = null;
 function loadAssetSpecs() {
   let stored = null;
   try {
-    const raw = sessionStorage.getItem(ASSET_SPEC_KEY);
+    const raw = localStorage.getItem(ASSET_SPEC_KEY);
     if (raw) stored = JSON.parse(raw);
   } catch (e) {}
   if (Array.isArray(stored) && stored.length > 0) {
@@ -85,7 +85,7 @@ function loadAssetSpecs() {
 }
 function saveAssetSpecs() {
   try {
-    sessionStorage.setItem(ASSET_SPEC_KEY, JSON.stringify(ASSET_SPECS));
+    localStorage.setItem(ASSET_SPEC_KEY, JSON.stringify(ASSET_SPECS));
   } catch (e) {}
 }
 function findAssetSpec(id) {
@@ -198,7 +198,7 @@ let ASSET_TPLS = null;
 function loadAssetTpls() {
   let stored = null;
   try {
-    const raw = sessionStorage.getItem(ASSET_TPL_KEY);
+    const raw = localStorage.getItem(ASSET_TPL_KEY);
     if (raw) stored = JSON.parse(raw);
   } catch (e) {}
   if (Array.isArray(stored) && stored.length > 0) {
@@ -210,7 +210,7 @@ function loadAssetTpls() {
 }
 function saveAssetTpls() {
   try {
-    sessionStorage.setItem(ASSET_TPL_KEY, JSON.stringify(ASSET_TPLS));
+    localStorage.setItem(ASSET_TPL_KEY, JSON.stringify(ASSET_TPLS));
   } catch (e) {}
 }
 function findAssetTpl(id) {
@@ -327,7 +327,7 @@ let ASSET_DESIGNS = null;
 function loadAssetDesigns() {
   let stored = null;
   try {
-    const raw = sessionStorage.getItem(ASSET_DESIGN_KEY);
+    const raw = localStorage.getItem(ASSET_DESIGN_KEY);
     if (raw) stored = JSON.parse(raw);
   } catch (e) {}
   if (Array.isArray(stored) && stored.length > 0) {
@@ -339,7 +339,7 @@ function loadAssetDesigns() {
 }
 function saveAssetDesigns() {
   try {
-    sessionStorage.setItem(ASSET_DESIGN_KEY, JSON.stringify(ASSET_DESIGNS));
+    localStorage.setItem(ASSET_DESIGN_KEY, JSON.stringify(ASSET_DESIGNS));
   } catch (e) {}
 }
 function findAssetDesign(id) {
@@ -473,7 +473,7 @@ let ASSET_CHECKS = null;
 function loadAssetChecks() {
   let stored = null;
   try {
-    const raw = sessionStorage.getItem(ASSET_CHECK_KEY);
+    const raw = localStorage.getItem(ASSET_CHECK_KEY);
     if (raw) stored = JSON.parse(raw);
   } catch (e) {}
   if (Array.isArray(stored) && stored.length > 0) {
@@ -488,7 +488,7 @@ function loadAssetChecks() {
 }
 function saveAssetChecks() {
   try {
-    sessionStorage.setItem(ASSET_CHECK_KEY, JSON.stringify(ASSET_CHECKS));
+    localStorage.setItem(ASSET_CHECK_KEY, JSON.stringify(ASSET_CHECKS));
   } catch (e) {}
 }
 function findAssetCheck(id) {

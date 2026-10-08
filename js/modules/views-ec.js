@@ -727,7 +727,7 @@ function doEcReviewReturn(id, stage) {
 function confirmResetAllEc() {
   openModal(modalContent("恢复案例库默认数据",
     `<p>将清除所有案例条目、审核记录、操作日志，恢复为系统默认的 10 条种子数据。</p>
-     <p class="small muted">当前 sessionStorage 中的案例库数据将被覆盖（不影响标准库、绩效考核等其他模块）。</p>`,
+     <p class="small muted">当前 localStorage 中的案例库数据将被覆盖（不影响标准库、绩效考核等其他模块）。</p>`,
     `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", `doResetAllEc()`)}`));
 }
 function doResetAllEc() { window.resetAllEc(); closeModal(); toast("已恢复默认数据"); replaceView(); }

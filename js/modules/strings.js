@@ -401,7 +401,7 @@ const EMPTY = {
 /* ---------- 权限配置弹窗 ---------- */
 const PERM = {
   title: '⚙️ 权限配置（系统管理员）',
-  tip: '选择角色，勾选其可访问的模块与子菜单。配置持久化到 sessionStorage，刷新页面仍有效。',
+  tip: '选择角色，勾选其可访问的模块与子菜单。配置持久化到 localStorage，刷新页面仍有效。',
   readonlyLabel: '🔒 只读',
   moduleCol: '模块 / 子系统',
   currentRole: '当前角色',

@@ -39,25 +39,25 @@ function startClock() {
 (function init() {
   // 加载菜单表（角色 perms 依赖 MENUS 结构，必须最先加载）
   loadMenus();
-  // 加载角色列表（角色内嵌 perms，无则按 MENUS 默认值初始化并写回 sessionStorage）
+  // 加载角色列表（角色内嵌 perms，无则按 MENUS 默认值初始化并写回 localStorage）
   loadRoles();
   // 同步 perms：补齐菜单变更带来的新/缺失 key
   if (typeof window.syncPermsWithMenus === "function") window.syncPermsWithMenus();
-  // 加载账号列表（持久化到 sessionStorage，支持账号管理页和登录鉴权）
+  // 加载账号列表（持久化到 localStorage，支持账号管理页和登录鉴权）
   loadAccounts();
-  // 加载部门列表（持久化到 sessionStorage，支持部门管理页）
+  // 加载部门列表（持久化到 localStorage，支持部门管理页）
   if (typeof loadDepts === "function") loadDepts();
   // 动态渲染登录页演示账号（依赖 ACCOUNTS 数据，必须在 loadAccounts 之后）
   if (typeof window.renderDemoAccounts === "function") window.renderDemoAccounts();
   // 加载过程资产模块数据（持久化到 localStorage，关闭浏览器不丢失）
   if (typeof window.loadAllAssets === "function") window.loadAllAssets();
-  // 加载绩效管理模块数据（持久化到 sessionStorage）
+  // 加载绩效管理模块数据（持久化到 localStorage）
   if (typeof window.loadAllPa === "function") window.loadAllPa();
-  // 加载标准库模块数据（持久化到 sessionStorage）
+  // 加载标准库模块数据（持久化到 localStorage）
   if (typeof window.loadAllStd === "function") window.loadAllStd();
-  // 加载经验案例库模块数据（持久化到 sessionStorage）
+  // 加载经验案例库模块数据（持久化到 localStorage）
   if (typeof window.loadAllEc === "function") window.loadAllEc();
-  // 尝试从 sessionStorage 恢复登录会话，否则展示登录页
+  // 尝试从 localStorage 恢复登录会话，否则展示登录页
   const restored = loadSession();
   if (restored) {
     document.getElementById("view-login").style.display = "none";

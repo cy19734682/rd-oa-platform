@@ -1,6 +1,6 @@
 /* ========== 研发OA综合平台 · 配置与数据 ========== */
 
-/* ---------- 角色（持久化到 sessionStorage） ---------- */
+/* ---------- 角色（持久化到 localStorage） ---------- */
 const ROLE_KEY = "oa_roles";
 const DEFAULT_ROLES = [
   {
@@ -58,9 +58,9 @@ const ALL = new Proxy([], {
   },
 });
 
-/* ---------- 动态菜单表（持久化到 sessionStorage，支持任意深度递归） ---------- */
+/* ---------- 动态菜单表（持久化到 localStorage，支持任意深度递归） ---------- */
 /*
- * MENUS 是运行时菜单表，由 loadMenus() 从 sessionStorage 加载，首次启动从 DEFAULT_MODULES 种子生成。
+ * MENUS 是运行时菜单表，由 loadMenus() 从 localStorage 加载，首次启动从 DEFAULT_MODULES 种子生成。
  * 结构：{ [modKey]: { key, name, icon, order, subs: [
  *   { key, name, icon, order, type, url, subs: [...] }
  * ]}}
@@ -329,11 +329,11 @@ function _migrateMenusSubs(menusObj) {
   }
 }
 
-/** 从 sessionStorage 加载菜单；无则以 DEFAULT_MODULES 初始化并写回 */
+/** 从 localStorage 加载菜单；无则以 DEFAULT_MODULES 初始化并写回 */
 function loadMenus() {
   let stored = null;
   try {
-    const raw = sessionStorage.getItem(MENU_KEY);
+    const raw = localStorage.getItem(MENU_KEY);
     if (raw) stored = JSON.parse(raw);
   } catch (e) {
     /* 忽略存储异常 */
@@ -356,7 +356,7 @@ function loadMenus() {
 }
 
 /** 递归对比 DEFAULT_MODULES 和 MENUS，把种子中新增的菜单项自动补进 MENUS
- *  场景：代码发布了新子菜单，但用户 sessionStorage 里还是旧 MENUS，导致看不到 */
+ *  场景：代码发布了新子菜单，但用户 localStorage 里还是旧 MENUS，导致看不到 */
 function _syncMenusMissingFromSeed() {
   let changed = false;
   for (const mk in DEFAULT_MODULES) {
@@ -473,10 +473,10 @@ function rebuildAllPermsFromDefault() {
   try { document.dispatchEvent(new CustomEvent("permschange")); } catch (e) {}
 }
 
-/** 将当前菜单表写回 sessionStorage */
+/** 将当前菜单表写回 localStorage */
 function saveMenus() {
   try {
-    sessionStorage.setItem(MENU_KEY, JSON.stringify(MENUS));
+    localStorage.setItem(MENU_KEY, JSON.stringify(MENUS));
   } catch (e) {
     /* 忽略 */
   }
@@ -930,9 +930,9 @@ function buildFullRolePerms() {
   return out;
 }
 
-/* ========== 角色持久化（sessionStorage） ========== */
+/* ========== 角色持久化（localStorage） ========== */
 
-/** 将 ROLES 当前内容序列化写入 sessionStorage */
+/** 将 ROLES 当前内容序列化写入 localStorage */
 function saveRoles() {
   try {
     const flat = {};
@@ -946,17 +946,17 @@ function saveRoles() {
         perms: ROLES[key].perms || {},
       };
     }
-    sessionStorage.setItem(ROLE_KEY, JSON.stringify(flat));
+    localStorage.setItem(ROLE_KEY, JSON.stringify(flat));
   } catch (e) {
     /* 忽略 */
   }
 }
 
-/** 从 sessionStorage 加载 ROLES；无则以 DEFAULT_ROLES + buildDefaultRolePerms 初始化 */
+/** 从 localStorage 加载 ROLES；无则以 DEFAULT_ROLES + buildDefaultRolePerms 初始化 */
 function loadRoles() {
   let flat = null;
   try {
-    const raw = sessionStorage.getItem(ROLE_KEY);
+    const raw = localStorage.getItem(ROLE_KEY);
     if (raw) flat = JSON.parse(raw);
   } catch (e) {
     /* 忽略存储异常 */
@@ -1069,7 +1069,7 @@ const ACCT_KEY = "oa_accounts";
 const DEPT_KEY = "oa_depts";
 const DEFAULT_PWD = "123456";
 
-/* 过程资产模块 sessionStorage Key（持久化存储，关闭浏览器标签页即清除） */
+/* 过程资产模块 localStorage Key（持久化存储，关闭浏览器标签页即清除） */
 const ASSET_SPEC_KEY = "oa_asset_spec";      // 开发规范
 const ASSET_TPL_KEY = "oa_asset_tpl";        // 文档模板
 const ASSET_DESIGN_KEY = "oa_asset_design";  // 设计规范
@@ -1177,7 +1177,7 @@ const MOCK = {
   ],
 };
 
-/* 默认账号（用于初始化 sessionStorage） */
+/* 默认账号（用于初始化 localStorage） */
 const DEFAULT_ACCOUNTS = [
   { id: "8001", n: "张工", key: "staff", deptId: "YJSJZ", phone: "13800008001", st: "启用", pwd: DEFAULT_PWD },
   { id: "8004", n: "刘工", key: "projManager", deptId: "CPGLZ", phone: "13800008004", st: "启用", pwd: DEFAULT_PWD },
@@ -1191,11 +1191,11 @@ const DEFAULT_ACCOUNTS = [
   { id: "admin", n: "系统管理员", key: "sysAdmin", deptId: "QWYB", phone: "13800000000", st: "启用", pwd: "admin123" }
 ];
 
-/** 从 sessionStorage 加载账号；无则以 DEFAULT_ACCOUNTS 初始化并写回 */
+/** 从 localStorage 加载账号；无则以 DEFAULT_ACCOUNTS 初始化并写回 */
 function loadAccounts() {
   let stored = null;
   try {
-    const raw = sessionStorage.getItem(ACCT_KEY);
+    const raw = localStorage.getItem(ACCT_KEY);
     if (raw) stored = JSON.parse(raw);
   } catch (e) {
     /* 忽略存储异常 */
@@ -1219,10 +1219,10 @@ function loadAccounts() {
   saveAccounts();
 }
 
-/** 将当前账号列表写回 sessionStorage */
+/** 将当前账号列表写回 localStorage */
 function saveAccounts() {
   try {
-    sessionStorage.setItem(ACCT_KEY, JSON.stringify(ACCOUNTS));
+    localStorage.setItem(ACCT_KEY, JSON.stringify(ACCOUNTS));
   } catch (e) {
     // 忽略
   }
@@ -1292,7 +1292,7 @@ function resetAccounts() {
 }
 
 
-/* ========== 部门管理（持久化到 sessionStorage） ========== */
+/* ========== 部门管理（持久化到 localStorage） ========== */
 
 /* 运行时部门列表 */
 let DEPTS = null;
@@ -1414,7 +1414,7 @@ window._pinyinInitials = function _pinyinInitials(name) {
 /* ---------- 通用持久化辅助（供 PA / 标准库 / 资产 子模块共用） ---------- */
 function _loadArr(key, fallback) {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const v = JSON.parse(raw);
       if (Array.isArray(v) && v.length > 0) return v;
@@ -1422,9 +1422,9 @@ function _loadArr(key, fallback) {
   } catch (e) {}
   return fallback.map((x) => ({ ...x }));
 }
-/** 通用：写入 sessionStorage */
+/** 通用：写入 localStorage */
 function _save(key, val) {
-  try { sessionStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
 }
 
 /* VIEWS 映射表——由 views.js 在加载时填充 */
