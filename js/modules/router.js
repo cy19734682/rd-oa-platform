@@ -380,7 +380,6 @@ function renderPlaceholder() {
       : `<button class="btn gray" onclick="goHome()">返回首页</button>`;
     return `
     <div class="page-title">${m.name}（外部子系统聚合）</div>
-    <div class="page-desc">该模块下包含 ${visibleSubs.length} 个外部子系统入口，可从左侧菜单选择或点击下方按钮跳转。</div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin:16px 0">
       ${jumpBtn}
     </div>

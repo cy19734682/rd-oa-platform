@@ -1163,17 +1163,6 @@ const MOCK = {
       st: "已退回",
       cls: "p3",
     }],
-  // 考核人员表
-  paPeople: [
-    {
-      id: "8001",
-      n: "张工",
-      role: "员工",
-      g: "硬件一组",
-      m: "周主管",
-      l: "赵主任",
-    },
-  ],
   sysLogs: [
     { time: "2026-10-04 09:12:35", who: "admin", type: "登录", typeCls: "ok", action: "用户登录系统", target: "IP 192.168.1.100" },
     { time: "2026-10-04 09:08:17", who: "赵主任", type: "业务", typeCls: "", action: "审核年终绩效考核表", target: "刘工（8006）· 2026 年度" },

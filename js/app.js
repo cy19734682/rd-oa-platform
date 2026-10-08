@@ -74,13 +74,3 @@ function startClock() {
   // 启动顶部实时时钟
   startClock();
 })();
-
-/* 登录页背景斜向水印（演示：用户名+日期） */
-(function () {
-  const w = document.getElementById("lgWm");
-  const d = "2026-09-17";
-  w.innerHTML = Array.from(
-    { length: 24 },
-    () => `<span>研发OA综合平台 · 张工 · ${d}</span>`,
-  ).join("");
-})();

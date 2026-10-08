@@ -130,7 +130,7 @@ function renderPaTemplate() {
     { label: "统计", html: `<span class="small muted">共 ${list.length} 个激活模板 · 总版本 ${allTpls.length}</span>` },
   ])}
   ${toolbar(
-    `模板管理 · 每个考核类型+角色只有一个激活版本`,
+    ``,
     `${canAdd ? btn("➕ 新建模板", "blue sm", "openCreatePaTpl()") : ""} ${btn("↻ 恢复默认", "gray sm", "resetPaTpls()")}`,
   )}
   ${zone(
@@ -695,23 +695,26 @@ function _renderPaTableList(forceType, pageKey, permKey) {
       { label: "可见范围", html: `<span class="small muted">共 ${people.length} 人 · 已创建 ${periodTables.length} 张考核表</span>` },
     ])}
   </div>
-  ${table(headers, people, (p) => {
-    const t = tableMap[p.id];
-    if (t) {
-      const finalScore = t.status === "finalized" ? `<span style="color:var(--ok);font-weight:600">${t.score}</span>` : '<span class="muted">-</span>';
-      const grade = t.status === "finalized" ? `<span class="tag ok" style="font-size:11px">${t.grade}</span>` : '<span class="muted">-</span>';
-      let taskCell = "";
-      if (isMonthly) {
-        const hasTask = (t.items || []).some(it => it.task && it.task.trim());
-        taskCell = hasTask
-          ? `<td style="white-space:nowrap">${btn("📋 查看", "ghost sm", `viewMonthlyTasks('${t.id}')`)}</td>`
-          : `<td class="muted" style="white-space:nowrap">未导入</td>`;
+  ${zone(
+    table(headers, people, (p) => {
+      const t = tableMap[p.id];
+      if (t) {
+        const finalScore = t.status === "finalized" ? `<span style="color:var(--ok);font-weight:600">${t.score}</span>` : '<span class="muted">-</span>';
+        const grade = t.status === "finalized" ? `<span class="tag ok" style="font-size:11px">${t.grade}</span>` : '<span class="muted">-</span>';
+        let taskCell = "";
+        if (isMonthly) {
+          const hasTask = (t.items || []).some(it => it.task && it.task.trim());
+          taskCell = hasTask
+            ? `<td style="white-space:nowrap">${btn("📋 查看", "ghost sm", `viewMonthlyTasks('${t.id}')`)}</td>`
+            : `<td class="muted" style="white-space:nowrap">未导入</td>`;
+        }
+        return `<td>${p.id}</td><td>${_escape(p.name)}</td><td style="white-space:nowrap" title="${_escape(p.role || "")}">${_escape(p.role || "")}</td><td style="white-space:nowrap" title="${_escape(p.group || "")}">${_escape(p.group || "")}</td><td>${_paStatusTag(t.status)}</td><td>${finalScore}</td><td>${grade}</td>${taskCell}<td>${btn("考核表", "ghost sm", `openPaTableDetail('${p.id}', '${__paPeriod}')`)}</td>`;
       }
-      return `<td>${p.id}</td><td>${_escape(p.name)}</td><td style="white-space:nowrap" title="${_escape(p.role || "")}">${_escape(p.role || "")}</td><td style="white-space:nowrap" title="${_escape(p.group || "")}">${_escape(p.group || "")}</td><td>${_paStatusTag(t.status)}</td><td>${finalScore}</td><td>${grade}</td>${taskCell}<td>${btn("考核表", "ghost sm", `openPaTableDetail('${p.id}', '${__paPeriod}')`)}</td>`;
-    }
-    const taskCellEmpty = isMonthly ? `<td class="muted">-</td>` : "";
-    return `<td>${p.id}</td><td>${_escape(p.name)}</td><td style="white-space:nowrap" title="${_escape(p.role || "")}">${_escape(p.role || "")}</td><td style="white-space:nowrap" title="${_escape(p.group || "")}">${_escape(p.group || "")}</td><td><span class="muted">未创建</span></td><td class="muted">-</td><td class="muted">-</td>${taskCellEmpty}<td>${canEdit ? btn("创建考核表", "ghost sm", `createPaTblForOwner('${p.id}', '${__paPeriod}')`) : '<span class="muted">-</span>'}</td>`;
-  }, "", isMonthly ? 260 : 220)}`;
+      const taskCellEmpty = isMonthly ? `<td class="muted">-</td>` : "";
+      return `<td>${p.id}</td><td>${_escape(p.name)}</td><td style="white-space:nowrap" title="${_escape(p.role || "")}">${_escape(p.role || "")}</td><td style="white-space:nowrap" title="${_escape(p.group || "")}">${_escape(p.group || "")}</td><td><span class="muted">未创建</span></td><td class="muted">-</td><td class="muted">-</td>${taskCellEmpty}<td>${canEdit ? btn("创建考核表", "ghost sm", `createPaTblForOwner('${p.id}', '${__paPeriod}')`) : '<span class="muted">-</span>'}</td>`;
+    }, "", isMonthly ? 260 : 220),
+    isMonthly ? "月度绩效考核列表" : "年度绩效考核列表"
+  )}`;
 }
 
 function _buildPaTableModalBody(forceType) {
