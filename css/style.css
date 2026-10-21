@@ -1288,7 +1288,6 @@ tr.locked td {
 
 /* 五段式 */
 .seg {
-  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 11px 13px;
   margin-bottom: 11px;
