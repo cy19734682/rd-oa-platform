@@ -70,6 +70,16 @@ function btn(text, cls = "", onClick = "", extraStyle = "") {
 }
 
 /**
+ * 全屏 / 还原图标按钮（置于弹窗标题栏右上角、关闭按钮 ✕ 左侧）
+ * 与关闭按钮同形态：无边框、无背景、仅图标（⛶ ⇄ ⤢），文字提示由 title 承担
+ * 全屏时左、右、下占满屏幕，顶部留出 header 高度；图标随当前状态切换
+ */
+function btnFullscreen() {
+  const isFs = typeof document !== "undefined" && document.getElementById("mask").classList.contains("fullscreen");
+  return `<button type="button" class="modal-fs" onclick="toggleModalFullscreen(this)" title="${isFs ? "还原" : "全屏"}">${isFs ? "⤢" : "⛶"}</button>`;
+}
+
+/**
  * 表格（含表头和行数据）
  * @param {string[]} headers - 表头数组
  * @param {Array} rows - 行数据数组
@@ -160,19 +170,6 @@ function metaRow(key, value, extraStyle = "") {
 }
 
 /**
- * 子系统网格项
- * @param {string} icon - 图标
- * @param {string} title - 标题
- * @param {string} desc - 描述
- * @param {string} onClick - onclick 内容
- * @param {string} extraStyle - 额外内联样式（可选）
- */
-function subsysItem(icon, title, desc, onClick, extraStyle = "") {
-  const styleAttr = extraStyle ? ` style="${extraStyle}"` : "";
-  return `<div class="subsys" onclick="${onClick}"${styleAttr}><div class="em">${icon}</div><div><div class="t">${title}</div><div class="d">${desc}</div></div></div>`;
-}
-
-/**
  * 弹窗表单行（label + control）
  * @param {string} label - 字段标签文本
  * @param {string} control - 输入控件 HTML
@@ -190,9 +187,10 @@ function formRow(label, control, required = false, hint = "") {
  * @param {string} title - 弹窗标题
  * @param {string} body - 弹窗正文（建议用 formRow() 组装表单）
  * @param {string} foot - 底部按钮区（可选）
+ * @param {string} [headerExtra] - 标题栏右上角额外按钮（渲染在关闭按钮 ✕ 左侧，可选）
  */
-function modalContent(title, body, foot = "") {
-  const header = `<div class="modal-header"><h3>${title}</h3><button type="button" class="modal-close" onclick="closeModal()" title="关闭">✕</button></div>`;
+function modalContent(title, body, foot = "", headerExtra = "") {
+  const header = `<div class="modal-header"><h3>${title}</h3><div class="modal-header-right">${headerExtra}<button type="button" class="modal-close" onclick="closeModal()" title="关闭">✕</button></div></div>`;
   const bodyHtml = `<div class="modal-body">${body}</div>`;
   const footHtml = foot ? `<div class="modal-footer">${foot}</div>` : "";
   return `${header}${bodyHtml}${footHtml}`;

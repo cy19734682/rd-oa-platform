@@ -1,6 +1,6 @@
 /* ========== 绩效管理模块 · config-pa.js ========== */
 /* 包含：考核人员库 / 模板 / 任务导入 / 考核表 / 结果 全流程种子与 CRUD */
-/* 依赖基座 config.js 中的 _loadArr / _save 辅助函数 */
+/* 依赖基座 config-base.js 中的 _loadArr / _save 辅助函数 */
 
 /* ---------- 绩效管理模块 localStorage Key ---------- */
 const OA_PA_TEMPLATES = "oa_pa_tpls";    // 考核表单模板（含历史版本）
@@ -371,10 +371,6 @@ function activatePaTemplate(id) {
 function editPaTemplateAsNewVersion(type, items, name) {
   return createPaTemplateNewVersion(type, { items, name });
 }
-function resetPaTemplates() {
-  PA_TEMPLATES = DEFAULT_PA_TEMPLATES.map((x) => ({ ...x, items: x.items.map((i) => ({ ...i })) }));
-  savePaTemplates();
-}
 
 /* ---------- 任务导入 CRUD（项目经理用） ---------- */
 
@@ -405,10 +401,6 @@ function deletePaTaskImportByPeriod(period) {
   const i = (PA_TASKS || []).findIndex((t) => t.period === period);
   if (i === -1) return false;
   PA_TASKS.splice(i, 1); savePaTasks(); return true;
-}
-function resetPaTasks() {
-  PA_TASKS = DEFAULT_PA_TASKS.map((x) => ({ ...x, tasks: x.tasks.map((t) => ({ ...t })) }));
-  savePaTasks();
 }
 
 /* ---------- 考核表 CRUD ---------- */
@@ -716,8 +708,11 @@ function autoCalcPeerScores(tableId) {
   savePaTables(); return true;
 }
 
-/** 年终考核：强制手动赋等级 */
-function assignYearlyGrade(tableId, grade) {
+/** 年终考核：强制手动赋等级（数据层核心实现）
+ * 命名约束：不可改回 assignYearlyGrade —— views-pa-yearly.js 中有同名顶层包装器
+ * （负责 toast 提示与 replaceView 重渲染），经典脚本语义下后加载者的同名声明会
+ * 覆盖本绑定，导致包装器内部自递归（RangeError）。视图层请调 window._assignYearlyGrade。 */
+function _assignYearlyGrade(tableId, grade) {
   const t = findPaTable(tableId); if (!t) return false;
   if (t.type !== "yearly") return false;
   if (!t.score) { const c = _calcPaTableScore(t); t.score = c.score; t.grade = c.grade; }
@@ -725,20 +720,6 @@ function assignYearlyGrade(tableId, grade) {
   t.status = "finalized"; t.gradedAt = Date.now();
   _generatePaResultFromTable(t);
   savePaTables(); return true;
-}
-
-function resetPaTables() {
-  PA_TABLES = DEFAULT_PA_TABLES.map((x) => ({ ...x, items: x.items.map((i) => ({ ...i })) }));
-  savePaTables();
-}
-function resetPaResults() {
-  PA_RESULTS = DEFAULT_PA_RESULTS.map((x) => ({ ...x }));
-  savePaResults();
-}
-
-/** 统一重置绩效管理模块 */
-function resetAllPa() {
-  resetPaTemplates(); resetPaTasks(); resetPaTables(); resetPaResults();
 }
 
 /* ---------- 绩效管理：按工号 + 时间区间检索本人数据 ---------- */
@@ -804,12 +785,10 @@ window.deletePaTemplate = deletePaTemplate;
 window.createPaTemplateNewVersion = createPaTemplateNewVersion;
 window.activatePaTemplate = activatePaTemplate;
 window.editPaTemplateAsNewVersion = editPaTemplateAsNewVersion;
-window.resetPaTemplates = resetPaTemplates;
 window.findPaTaskImport = findPaTaskImport;
 window.listPaTaskImportByPeriod = listPaTaskImportByPeriod;
 window.importPaTasks = importPaTasks;
 window.deletePaTaskImportByPeriod = deletePaTaskImportByPeriod;
-window.resetPaTasks = resetPaTasks;
 window.findPaTable = findPaTable;
 window.findPaTableByPeriod = findPaTableByPeriod;
 window.createPaTable = createPaTable;
@@ -822,11 +801,9 @@ window.submitPaTableSup = submitPaTableSup;
 window.submitPaTablePM = submitPaTablePM;
 window.finalizePaTableByLeader = finalizePaTableByLeader;
 window.rollbackPaTable = rollbackPaTable;
-window.resetPaTables = resetPaTables;
 window.autoCalcPeerScores = autoCalcPeerScores;
 window.savePeerReviewerScore = savePeerReviewerScore;
-window.assignYearlyGrade = assignYearlyGrade;
-window.resetPaResults = resetPaResults;
+window._assignYearlyGrade = _assignYearlyGrade;
 window.searchPaByOwnerAndPeriod = searchPaByOwnerAndPeriod;
 window._calcPaTableScore = _calcPaTableScore;
 window._isLongText = _isLongText;

@@ -492,13 +492,13 @@ function searchEcCases({ keyword, shareName, shareDept, source, category, status
         }
       }
     }
-    if (shareName && shareName !== "全部" && !(c.shareName || "").includes(shareName)) return false;
-    if (shareDept && shareDept !== "全部" && !(c.shareDept || "").includes(shareDept)) return false;
-    if (source && source !== "全部" && c.source !== source) return false;
-    if (category && category !== "全部" && c.category !== category) return false;
-    if (status && status !== "全部" && c.reviewStatus !== status) return false;
-    if (quality && quality !== "全部" && c.quality !== quality) return false;
-    if (promotionValue && promotionValue !== "全部" && c.promotionValue !== promotionValue) return false;
+    if (shareName && !(c.shareName || "").includes(shareName)) return false;
+    if (shareDept && !(c.shareDept || "").includes(shareDept)) return false;
+    if (source && c.source !== source) return false;
+    if (category && c.category !== category) return false;
+    if (status && c.reviewStatus !== status) return false;
+    if (quality && c.quality !== quality) return false;
+    if (promotionValue && c.promotionValue !== promotionValue) return false;
     if (dateStart) { if ((c.submittedAt || 0) < new Date(dateStart).getTime()) return false; }
     if (dateEnd) { if ((c.submittedAt || 0) > new Date(dateEnd).getTime() + 86400000) return false; }
     return true;
@@ -514,14 +514,6 @@ function logEcOp(op, caseId, note) {
     caseId, op, who, time: Date.now(), note,
   });
   saveEcLogs();
-}
-
-/* ---------- 恢复默认 ---------- */
-function resetAllEc() {
-  localStorage.removeItem(OA_EC_CASES);
-  localStorage.removeItem(OA_EC_LOGS);
-  loadEcCases();
-  loadEcLogs();
 }
 
 /* ---------- 重置（加载时调用一次） ---------- */
@@ -545,6 +537,5 @@ window.toggleEcLike = toggleEcLike;
 window.addEcComment = addEcComment;
 window.searchEcCases = searchEcCases;
 window.logEcOp = logEcOp;
-window.resetAllEc = resetAllEc;
 window.loadAllEc = loadAllEc;
 window.EC_REVIEW_STATUS_MAP = EC_REVIEW_STATUS_MAP;

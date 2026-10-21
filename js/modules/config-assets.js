@@ -1,6 +1,6 @@
 /* ========== 过程资产模块 · config-assets.js ========== */
 /* 包含：开发规范 / 文档模板 / 设计规范 / 评审 Checklist 4 类种子与 CRUD */
-/* 依赖基座 config.js 中的 _loadArr / _save 辅助函数 */
+/* 依赖基座 config-base.js 中的 _loadArr / _save 辅助函数 */
 
 /* ================================================================
 *  过程资产模块：开发规范 / 文档模板 / 设计规范 / 评审 Checklist
@@ -103,6 +103,7 @@ function addAssetSpec(data) {
     desc: data.desc || "",
     content: data.content || "",
     tags: Array.isArray(data.tags) ? data.tags : [],
+    attachments: Array.isArray(data.attachments) ? data.attachments : [],
     createdAt: now,
     updatedAt: now,
   };
@@ -113,7 +114,7 @@ function addAssetSpec(data) {
 function updateAssetSpec(id, patch) {
   const a = findAssetSpec(id);
   if (!a) return false;
-  const allowed = ["title", "category", "version", "desc", "content", "tags"];
+  const allowed = ["title", "category", "version", "desc", "content", "tags", "attachments"];
   allowed.forEach((k) => {
     if (patch[k] !== undefined) a[k] = patch[k];
   });
@@ -127,10 +128,6 @@ function deleteAssetSpec(id) {
   ASSET_SPECS.splice(i, 1);
   saveAssetSpecs();
   return true;
-}
-function resetAssetSpecs() {
-  ASSET_SPECS = DEFAULT_ASSET_SPECS.map((x) => ({ ...x }));
-  saveAssetSpecs();
 }
 function getAssetSpecCategories() {
   const cats = new Set();
@@ -251,10 +248,6 @@ function deleteAssetTpl(id) {
   ASSET_TPLS.splice(i, 1);
   saveAssetTpls();
   return true;
-}
-function resetAssetTpls() {
-  ASSET_TPLS = DEFAULT_ASSET_TPLS.map((x) => ({ ...x }));
-  saveAssetTpls();
 }
 function getAssetTplCategories() {
   const cats = new Set();
@@ -381,10 +374,6 @@ function deleteAssetDesign(id) {
   ASSET_DESIGNS.splice(i, 1);
   saveAssetDesigns();
   return true;
-}
-function resetAssetDesigns() {
-  ASSET_DESIGNS = DEFAULT_ASSET_DESIGNS.map((x) => ({ ...x }));
-  saveAssetDesigns();
 }
 function getAssetDesignCategories() {
   const cats = new Set();
@@ -535,13 +524,6 @@ function deleteAssetCheck(id) {
   saveAssetChecks();
   return true;
 }
-function resetAssetChecks() {
-  ASSET_CHECKS = DEFAULT_ASSET_CHECKS.map((x) => ({
-    ...x,
-    items: x.items.map((i) => ({ ...i })),
-  }));
-  saveAssetChecks();
-}
 function getAssetCheckCategories() {
   const cats = new Set();
   (ASSET_CHECKS || []).forEach((x) => x.category && cats.add(x.category));
@@ -564,23 +546,19 @@ window.findAssetSpec = findAssetSpec;
 window.addAssetSpec = addAssetSpec;
 window.updateAssetSpec = updateAssetSpec;
 window.deleteAssetSpec = deleteAssetSpec;
-window.resetAssetSpecs = resetAssetSpecs;
 window.getAssetSpecCategories = getAssetSpecCategories;
 window.findAssetTpl = findAssetTpl;
 window.addAssetTpl = addAssetTpl;
 window.updateAssetTpl = updateAssetTpl;
 window.deleteAssetTpl = deleteAssetTpl;
-window.resetAssetTpls = resetAssetTpls;
 window.getAssetTplCategories = getAssetTplCategories;
 window.findAssetDesign = findAssetDesign;
 window.addAssetDesign = addAssetDesign;
 window.updateAssetDesign = updateAssetDesign;
 window.deleteAssetDesign = deleteAssetDesign;
-window.resetAssetDesigns = resetAssetDesigns;
 window.getAssetDesignCategories = getAssetDesignCategories;
 window.findAssetCheck = findAssetCheck;
 window.addAssetCheck = addAssetCheck;
 window.updateAssetCheck = updateAssetCheck;
 window.deleteAssetCheck = deleteAssetCheck;
-window.resetAssetChecks = resetAssetChecks;
 window.getAssetCheckCategories = getAssetCheckCategories;

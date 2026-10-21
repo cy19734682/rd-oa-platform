@@ -6,98 +6,104 @@
  */
 const PAGES = {
   home: {
-    title: '平台总览',
-    desc: '统一部署 · 统一入口 · 统一账号权限 · 两级日志审计。下方板块与子系统入口均按当前角色权限动态展示。',
-    quickEntry: '板块快捷入口（仅展示您有权限的 {n} 个板块）',
-    quickDesc: '当前角色「{role}」可访问的板块；无权限板块不会出现在导航中。',
+    title: '工作台',
+    desc: '统一入口 · 统一账号 · 统一权限',
+  },
+  search: {
+    title: '搜索结果',
+    desc: '关键词「{q}」共命中 {n} 条结果，点击查看详情',
   },
   stdHome: {
     title: '标准库',
-    desc: '看板 · 智能检索 · 多维度筛选 · 在线阅览（动态水印）· 版本并存 · 标准维护（新建/升级/废止）',
+    desc: '看板 · 检索筛选 · 在线阅览 · 版本维护',
   },
   ec: {
     title: '经验案例库',
-    desc: '五段式经验沉淀 · 三级审核入库 · 点赞评论 · 查阅排名 · 动态水印',
+    desc: '五段式沉淀 · 三级审核 · 点赞评论',
   },
   ecSubmit: {
     title: '提交经验案例',
-    desc: '提交后系统自动查重（标题 + 附件）；审核链：直接主管 → 部门领导 → 副总工',
+    desc: '提交后自动查重；审核链：主管 → 部门领导 → 副总工',
   },
   paPeople: {
     title: '考核人员库',
-    desc: '部门领导维护：工号 / 姓名 / 属性（员工/主管/项目经理）/ 部门小组 / 直接主管 / 部门领导',
+    desc: '维护工号、姓名、属性与汇报关系',
   },
   paTemplate: {
-    title: '考核表单模板管理',
-    desc: '编辑月度/年终考核表单模板（分类、考核标准、权重），自动保存历史版本，启用最新版本',
+    title: '考核模板管理',
+    desc: '维护考核表单模板，自动留存历史版本',
   },
   paTableMonthly: {
     title: '月度绩效考核',
-    desc: '项目经理 → 直接主管 → 部门领导 三级月度打分流程',
+    desc: 'PM → 主管 → 领导 三级月度打分',
   },
   paTableYearly: {
     title: '年度绩效考核',
-    desc: '项目经理 → 直接主管 → 部门领导 三级年度打分流程',
+    desc: 'PM → 主管 → 领导 三级年度打分',
   },
   paYearly: {
     title: '年终考核汇总',
-    desc: '自动汇总当年月度成绩、生成互评分、强制生成年终得分、排序后手工赋等级',
+    desc: '汇总月度与互评成绩，排序赋等级',
   },
   paPeerMgmt: {
     title: '互评管理',
-    desc: '批量配置互评人、查看互评提交进度、计算互评平均分（主管/项目经理年终考核专属）',
+    desc: '配置互评人，查看进度与平均分',
   },
   paPeerReview: {
-    title: '年终绩效互评',
-    desc: '主管 / 项目经理互评打分入口 — 对待评价的同事完成互评表单后，系统自动汇总为平均分',
+    title: '我的互评任务',
+    desc: '对待评价同事完成互评打分',
   },
   paResult: {
-    title: '考核结果查询 / 检索',
-    desc: '按工号 + 时间区间 + 关键字检索月度/年终考核表、每项得分、汇总总分、等级、评价（数据永久保存）',
+    title: '结果查询 / 检索',
+    desc: '按工号与时间区间检索历史考核结果',
   },
   sysAcct: {
     title: '账号管理',
-    desc: '创建 / 维护登录账号',
+    desc: '创建与维护登录账号',
   },
   sysDept: {
     title: '部门管理',
-    desc: '维护组织架构部门，支持多级嵌套',
+    desc: '维护多级嵌套组织架构',
   },
   sysRole: {
     title: '角色管理',
-    desc: '维护系统角色及其菜单权限范围；角色新增/删除影响全局，操作前请评估',
+    desc: '维护角色与菜单权限范围',
   },
   sysMenu: {
     title: '菜单管理',
-    desc: '维护系统的菜单模块和子菜单结构',
+    desc: '维护菜单模块与子菜单结构',
   },
   sysLog: {
     title: '日志与审计',
-    desc: '登录日志 + 操作日志',
+    desc: '登录日志 · 操作日志',
   },
   sysDict: {
-    title: '数据字典管理',
-    desc: '统一维护系统中各类下拉选项和分类标签',
+    title: '数据字典',
+    desc: '维护下拉选项与分类标签',
+  },
+  sysNotice: {
+    title: '通知公告',
+    desc: '发布与维护通知、公告、制度',
   },
   placeholder: {
     title: '{name}（内部功能入口）',
-    desc: '该功能暂未实现或已下线，占位用于演示导航与权限联动效果。',
+    desc: '功能暂未实现，此处仅作导航与权限演示',
   },
   'sub-spec': {
     title: '开发规范',
-    desc: '研发过程中的各类规范文档集中管理，支持分类筛选、在线预览、版本对比与下载',
+    desc: '规范文档集中管理，支持筛选、预览与下载',
   },
   'sub-tpl': {
     title: '文档模板',
-    desc: '可复用的文档模板库，覆盖产品/研发/测试/运维/管理全角色',
+    desc: '可复用文档模板，覆盖全角色',
   },
   'sub-design': {
     title: '设计规范',
-    desc: '统一视觉、组件、交互、布局规范，保障多端体验一致性',
+    desc: '统一视觉、组件与交互规范',
   },
   'sub-check': {
     title: '评审 Checklist',
-    desc: '研发、测试、需求、发布各环节评审检查项模板，支持勾选演示',
+    desc: '各环节评审检查项模板',
   },
 };
 
@@ -137,6 +143,9 @@ const BTN = {
   submitCase: '提交案例',
   query: '查询',
   addRole: '+ 新增角色',
+  newNotice: '+ 新增公告',
+  publish: '发布',
+  revoke: '撤回',
   copyRole: '复制角色',
   viewMembers: '查看成员',
   builtin: '内置角色',
@@ -161,6 +170,7 @@ const TH = {
   sysDept: ['部门编码', '部门名称', '操作'],
   sysRole: ['角色编码', '角色名称', '操作'],
   sysLog: ['时间', '人员', '类型', '动作', '对象'],
+  sysNotice: ['标题', '类型', '发布人', '发布时间', '置顶', '状态', '操作'],
 };
 
 /* ---------- 状态标签 ---------- */
@@ -197,39 +207,39 @@ const STATUS_CLS = {
 
 /* ---------- Toast 提示消息 ---------- */
 const TOAST = {
-  stdNew: '标准管理员入口：新建标准条目',
-  stdNewForm: '打开新建标准条目表单：编号/名称/级别/性质/领域/归口/起草单位/附件…',
-  stdUpgrade: '上传新版本文件；保存后老版本自动留存并记录替代关系',
-  stdAbolish: '已标记废止：动态提醒将推送至订阅人员',
+  stdNew: '新建标准条目',
+  stdNewForm: '新建标准条目表单',
+  stdUpgrade: '上传新版本，老版本自动留存',
+  stdAbolish: '已标记废止',
   stdViewHistory: '查看历史文本',
   dictMaintain: '增删改「{name}」字典项',
-  addPersonForm: '打开新增人员表单（工号/姓名/属性…）',
+  addPersonForm: '新增人员表单',
   editPerson: '编辑 {name} 字段',
-  addAcctForm: '打开新增账号表单：工号/姓名/角色/初始密码',
-  resetPwd: '重置 {name} 的密码（将通知本人）',
-  configPerm: '配置 {name} 的两级权限',
+  addAcctForm: '新增账号表单',
+  resetPwd: '重置 {name} 的密码',
+  configPerm: '配置 {name} 的权限',
   toggleAcct: '{action}账号：{name}',
-  ecSubmitOk: '已确认非重复，提交成功 → 进入主管初审',
+  ecSubmitOk: '已提交，进入主管初审',
   ecReturnOk: '已退回，提交人可修改重提',
   ecApprove: '已通过初审（质量：优秀，推广：大）',
-  pwdReset: '已重置为默认密码（{pwd}），请通知本人尽快修改',
-  scoreSubmitOk: '已提交，自动汇总至部门领导，本表锁定',
+  pwdReset: '已重置为默认密码 {pwd}',
+  scoreSubmitOk: '已提交，本表已锁定',
   rollbackOnly: '仅领导可打回：退回指定考核人重改',
   bellNotify: '您有 3 条标准上新提醒、2 条案例待审核',
-  placeholderIntercept: '生产环境中该链接将被登录拦截器拦截，跳转至登录页',
-  downloadDone: '已下载 PDF（服务端写入 张工+时间 水印）',
+  placeholderIntercept: '生产环境将跳转至登录页',
+  downloadDone: '已下载（已写入水印）',
   loginSuccess: '登录成功！',
   logoutSuccess: '已退出登录',
-  permSaved: '权限配置已保存（刷新页面后对所有角色生效）',
+  permSaved: '权限已保存',
   permConfigOnly: '仅系统管理员可配置菜单权限',
   unknownRole: '未知角色，保存失败',
-  noPermAccess: '当前角色「{role}」无权限访问「{module}」板块',
-  addRoleForm: '打开新增角色表单：角色编码 / 显示名称 / 描述 / 权限范围',
+  noPermAccess: '「{role}」无权访问「{module}」',
+  addRoleForm: '新增角色表单',
   editRole: '编辑角色「{name}」的基本信息',
-  copyRole: '复制角色「{name}」及其全部权限配置为新角色',
-  roleBuiltin: '内置角色不可删除，仅可调整关联账号与权限范围',
-  viewRoleMembers: '查看角色「{name}」下的全部 {n} 名成员',
-  roleDesc: '角色说明（权限范围摘要）',
+  copyRole: '复制角色「{name}」及全部权限',
+  roleBuiltin: '内置角色不可删除',
+  viewRoleMembers: '查看「{name}」的 {n} 名成员',
+  roleDesc: '角色说明',
 };
 
 /* ---------- UI 通用文案 ---------- */
@@ -238,32 +248,26 @@ const UI = {
   returnTitle: '退回原因',
   returnPlaceholder: '请说明退回修改原因',
   submitConfirmTitle: '提交确认',
-  submitConfirmText: '提交后以下人员将锁定打分，无法自行修改：',
+  submitConfirmText: '提交后以下人员将锁定，无法自行修改：',
   duplicateCheckTitle: '自动查重结果',
-  duplicateCheckText: '系统已按「标题指纹 + 附件哈希」比对，发现 1 条疑似相似案例：',
-  duplicateCheckAdvice: '如确认非重复，可继续提交；否则请修改标题或补充差异化内容。',
+  duplicateCheckText: '发现 1 条疑似相似案例：',
+  duplicateCheckAdvice: '确认非重复可继续提交，否则请修改标题或补充差异内容。',
   similarity: '相似度 {pct}',
-  scoreLockTip: '双方提交后本表自动流转至部门领导并锁定，提交后不可修改（需打回才能重改）。',
+  scoreLockTip: '双方提交后本表将锁定，需打回才能重改。',
   // 表单占位
-  keywordPlaceholder: '🔍 关键词：名称 / 编号 / 摘要（如 密封性试验）',
+  keywordPlaceholder: '🔍 关键词：名称 / 编号 / 摘要',
   caseTitlePlaceholder: '如：超声波燃气表计量漂移问题排查',
   productPlaceholder: '如：超声波燃气表 UG-200',
   addKeyword: '+ 添加关键字',
   datePlaceholder: '如 2026-09-17',
-  // 标签/描述
-  devSubDesc1: '标准管理员专属',
-  devSubDesc2: '三级审核入库',
-  devSubDesc3: '子系统入口',
-  shortcutLabel: '快捷进入 · 仅显示您可见的子系统',
-  clickEntry: '点击进入板块',
   // 角色标签
   roleStaff: '一般人员',
   roleStdAdmin: '标准管理员',
   roleSysAdmin: '系统管理员',
   roleLeader: '部门领导',
-  roleDeptHead: '部门领导为本系统默认系统管理员，可对未提交者打回重改；提交后任何人不可再修改打分。',
+  roleDeptHead: '部门领导即默认系统管理员，可打回未提交者',
   // 水印提示
-  readerHint: '在线预览叠加「用户名+时间」动态水印，防止截屏泄密；翻页 / 放大缩小 / 全屏可用。',
+  readerHint: '预览叠加「用户名+时间」动态水印，防截屏泄密',
   // 纳秒级时间戳弹窗
   nanoTitle: '高精度时间戳（纳秒级）',
   // 标准状态看板
@@ -354,20 +358,42 @@ const LOGIN = {
   brand: '前卫表业',
   title: '研发OA综合平台',
   enTitle: 'R&D OA Integrated Platform',
-  tip: '请先登录后才能访问本系统（未登录已拦截子系统访问）',
+  tip: '请先登录后访问本系统',
   userLabel: '用户名 Account',
   userPlaceholder: '请输入工号 / 账号',
   pwdLabel: '密码 Password',
   pwdPlaceholder: '请输入密码',
   btn: '登 录',
-  warm: '温馨提示：如密码遗失，请联系工程技术研究中心！',
-  demoLabel: '演示账号（点击自动填充账号与密码，角色由工号自动识别）：',
+  warm: '如密码遗失，请联系工程技术研究中心',
+  demoLabel: '演示账号（点击自动填充）：',
   demoStaff: '8001 一般人员',
   demoStdAdmin: '8002 标准管理员',
   demoSysAdmin: 'admin 系统管理员',
-  emptyTip: '请输入工号 / 账号与密码后再登录',
+  emptyTip: '请输入工号与密码',
   roleLabel: '角色：{name}',
   watermark: '研发OA综合平台 · 张工 · {date}',
+};
+
+/* ---------- 通知公告 ---------- */
+const NOTICE = {
+  types: { notice: '通知', announce: '公告', policy: '制度' },
+  statusPublished: '已发布',
+  statusDraft: '草稿',
+  publish: '发布',
+  revoke: '撤回',
+  addTitle: '📢 新增公告',
+  editTitle: '✏️ 编辑公告',
+  labelTitle: '标题',
+  labelType: '类型',
+  labelContent: '正文内容',
+  labelTop: '置顶展示',
+  labelStatus: '状态',
+  titlePlaceholder: '请输入公告标题',
+  contentPlaceholder: '请输入公告正文内容…',
+  delConfirm: '确定删除公告「{name}」吗？删除后不可恢复。',
+  saved: '公告已保存',
+  deleted: '公告已删除',
+  topTip: '置顶后在工作台公告面板最前方展示',
 };
 
 /* ---------- 导航/菜单文案 ---------- */
@@ -379,12 +405,61 @@ const NAV = {
   roleLabel: '角色：{name}',
   permConfig: '⚙️ 权限配置',
   logout: '切换角色 / 退出登录',
-  crumbHome: '首页 / <b>平台总览</b>',
+  crumbHome: '<b>工作台</b>',
+  backToModule: '← 返回{module}',
+  backToGroup: '← 返回{group}',
+};
+
+/* ---------- 板块主题色（OA 门户磁贴用） ---------- */
+const MODULE_THEME = {
+  proj: '#1677ff',
+  dev: '#52c41a',
+  asset: '#13c2c2',
+  perf: '#722ed1',
+  sys: '#fa8c16',
+};
+
+/* ---------- 模块描述（工作台「全部板块」卡片副标题；自定义模块无描述时不显示该行） ---------- */
+const MODULE_DESC = {
+  proj: '研发项目计划、进度看板与任务协同',
+  dev: '标准信息、经验沉淀与研发工具集',
+  asset: '开发规范、文档模板与设计 Checklist',
+  sys: '账号权限、两级日志与审计',
+};
+
+/* ---------- 子系统描述（板块首页 / 三级分组页磁贴副标题；运行时新增菜单无描述时不显示该行） ---------- */
+const SUB_DESC = {
+  pdr: '研发设计方案提交、评审与归档',
+  psr: '项目阶段里程碑评审跟踪',
+  pms: '公司内部项目管理平台 DevSuite',
+  board: '项目进度看板原型',
+  stdHome: '标准文档看板、检索与在线阅读',
+  ec: '研发问题案例沉淀与三级审核',
+  'sub-auto': '外部自动化测试平台',
+  'sub-spec': '结构设计、接口定义、编码风格等规范',
+  'sub-tpl': '可复用文档模板，覆盖全角色',
+  'sub-design': '统一视觉、组件、交互与布局规范',
+  'sub-check': '研发、测试、需求、发布评审检查项',
+  paTemplate: '维护月度 / 年度考核表单模板',
+  paTableMonthly: 'PM → 主管 → 领导三级打分',
+  paYearlyMgmt: '年度打分、互评任务与年终汇总的一站式管理',
+  paTableYearly: '年度模板三级打分，考核全年',
+  paPeerMgmt: '批量配置互评人，查看提交进度',
+  paPeerReview: '分配给自己的互评任务列表',
+  paResult: '按工号与时间区间查询历史结果',
+  paYearly: '汇总月度与互评分，排序赋等级',
+  sysAcct: '管理登录账号、密码与启用状态',
+  sysDept: '维护多级嵌套组织架构',
+  sysRole: '维护角色与权限配置',
+  sysMenu: '维护系统菜单树结构',
+  sysDict: '维护系统数据字典',
+  sysLog: '查看操作日志与审计记录',
+  sysNotice: '发布与维护通知公告',
 };
 
 /* ---------- 模块名称 ---------- */
 const MODULE_NAMES = {
-  home: '首页',
+  home: '工作台',
   proj: '项目管理',
   dev: '研发公共',
   asset: '过程资产',
@@ -394,14 +469,14 @@ const MODULE_NAMES = {
 
 /* ---------- 空状态/占位 ---------- */
 const EMPTY = {
-  placeholderHint: '该子菜单对应的页面暂未开发实现，点击下方按钮可返回首页。',
-  placeholderBtn: '返回首页',
+  placeholderHint: '该页面暂未实现',
+  placeholderBtn: '返回工作台',
 };
 
 /* ---------- 权限配置弹窗 ---------- */
 const PERM = {
   title: '⚙️ 权限配置（系统管理员）',
-  tip: '选择角色，勾选其可访问的模块与子菜单。配置持久化到 localStorage，刷新页面仍有效。',
+  tip: '选择角色，勾选其可访问的模块与子菜单',
   readonlyLabel: '🔒 只读',
   moduleCol: '模块 / 子系统',
   currentRole: '当前角色',
@@ -409,8 +484,6 @@ const PERM = {
   stdAdminLabel: '标准管理员',
   sysAdminLabel: '系统管理员（内置）',
   save: '💾 保存配置',
-  reset: '↻ 恢复默认',
   note: '系统管理员默认拥有所有菜单权限，不可修改。',
   saved: '角色「{role}」权限已保存',
-  resetConfirm: '已恢复为默认权限配置',
 };

@@ -17,11 +17,11 @@ function __fmtTime(ts) {
 /* ---------- 当前筛选查询参数 ---------- */
 let __ecQuery = {
   keyword: "",
-  source: "全部",
-  category: "全部",
-  quality: "全部",
-  promotionValue: "全部",
-  dateRange: "全部",
+  source: "",
+  category: "",
+  quality: "",
+  promotionValue: "",
+  dateRange: "",
   searchBody: false,
 };
 let __ecSortBy = "submittedAt"; // submittedAt | viewCount | likeCount
@@ -37,14 +37,13 @@ function renderEcList() {
   const actions = [
     canAdd ? btn("+ 新建案例", "sm", "openEcSubmitForm()") : "",
     canExport ? btn("⇣ 导出已入库案例", "gray sm", "exportEcCases()") : "",
-    btn("↻ 恢复默认数据", "gray sm", "confirmResetAllEc()"),
   ].filter(Boolean).join("");
 
   // 来源 / 分类 / 质量 / 推广价值 下拉
-  const sourceOpts = ["全部", ...window.getStdDict("ecSources")];
-  const categoryOpts = ["全部", ...window.getStdDict("ecCategories")];
-  const qualityOpts = ["全部", ...window.getStdDict("ecQualities")];
-  const valueOpts = ["全部", ...window.getStdDict("ecValues")];
+  const sourceOpts = ["", ...window.getStdDict("ecSources")];
+  const categoryOpts = ["", ...window.getStdDict("ecCategories")];
+  const qualityOpts = ["", ...window.getStdDict("ecQualities")];
+  const valueOpts = ["", ...window.getStdDict("ecValues")];
 
   return `
   ${pageHeader(PAGES.ec.title, PAGES.ec.desc, actions)}
@@ -56,7 +55,7 @@ function renderEcList() {
       { label: "案例分类", html: select(categoryOpts, __ecQuery.category) },
       { label: "质量评价", html: select(qualityOpts, __ecQuery.quality) },
       { label: "推广价值", html: select(valueOpts, __ecQuery.promotionValue) },
-      { label: "提交时间段", html: select(["全部", "近7天", "近30天", "近90天", "近1年"], __ecQuery.dateRange) },
+      { label: "提交时间段", html: select(["", "近7天", "近30天", "近90天", "近1年"], __ecQuery.dateRange) },
       { label: "高级检索", html: `<label style="display:flex;align-items:center;gap:6px"><input type="checkbox" ${__ecQuery.searchBody ? "checked" : ""} id="ec_body" /> 同时搜索案例正文</label>` },
       { label: " ", html: `${btn("🔍 搜索", "sm", "doEcSearch()")} ${btn(BTN.reset, "gray sm", "doEcReset()")}` },
     ])}
@@ -72,10 +71,10 @@ function __renderEcResultList() {
   // 构建搜索 query
   const query = {
     keyword: __ecQuery.keyword,
-    source: __ecQuery.source !== "全部" ? __ecQuery.source : null,
-    category: __ecQuery.category !== "全部" ? __ecQuery.category : null,
-    quality: __ecQuery.quality !== "全部" ? __ecQuery.quality : null,
-    promotionValue: __ecQuery.promotionValue !== "全部" ? __ecQuery.promotionValue : null,
+    source: __ecQuery.source || null,
+    category: __ecQuery.category || null,
+    quality: __ecQuery.quality || null,
+    promotionValue: __ecQuery.promotionValue || null,
     searchBody: __ecQuery.searchBody,
   };
   // 时间段
@@ -194,7 +193,7 @@ function doEcSearch() {
   replaceView();
 }
 function doEcReset() {
-  __ecQuery = { keyword: "", source: "全部", category: "全部", quality: "全部", promotionValue: "全部", dateRange: "全部", searchBody: false };
+  __ecQuery = { keyword: "", source: "", category: "", quality: "", promotionValue: "", dateRange: "", searchBody: false };
   __ecSortBy = "submittedAt";
   __ecSortDir = "desc";
   replaceView();
@@ -222,7 +221,9 @@ function openEcDetail(id) {
   const isLiked = (c.likedBy || []).includes(curEmpId);
 
   openModal(modalContent(`📖 ${_escape(c.title)}`, __buildEcDetailFull(c, isLiked),
-    `${btn("👍 点赞（" + (c.likeCount || 0) + "）", isLiked ? "ok" : "", `toggleEcLikeInModal('${id}', ${isLiked})`)} ${btn("📥 下载附件（带水印）", "gray", `downloadEcAttachment('${id}')`)} ${btn("关闭", "gray", "closeModal()")}`), "1100px");
+    `${btn("👍 点赞（" + (c.likeCount || 0) + "）", isLiked ? "ok" : "", `toggleEcLikeInModal('${id}', ${isLiked})`)} ${btn("📥 下载附件（带水印）", "gray", `downloadEcAttachment('${id}')`)} ${btn("关闭", "gray", "closeModal()")}`,
+    btnFullscreen()),
+    { width: "1100px", fullscreen: document.getElementById("mask").classList.contains("fullscreen") });
 }
 
 /** 构建详情完整内容（五段式 + 元数据 + 附件 + 评论） */
@@ -306,7 +307,7 @@ function __buildEcDetailFull(c, isLiked) {
           </div>
         </div>
         <!-- 正文 -->
-        <div style="position:relative;z-index:2;padding:24px 28px;max-height:520px;overflow:auto">
+        <div class="ec-detail-content" style="position:relative;z-index:2;padding:24px 28px;max-height:520px;overflow:auto">
           ${sections}
         </div>
       </div>
@@ -474,7 +475,7 @@ function __buildEcForm(c) {
     <input id="ef_attachSize" class="ipt" value="${(src.attachments && src.attachments[0] && src.attachments[0].size) || "2MB"}" placeholder="文件大小" style="width:120px" />
     <input id="ef_attachType" class="ipt" value="${(src.attachments && src.attachments[0] && src.attachments[0].type) || "docx"}" placeholder="pdf/docx" style="width:80px" />
   </div>
-  <div class="small muted" style="margin-top:4px">支持 Word（.docx）或 PDF 格式；原型演示不支持真正文件上传，实际部署对接对象存储。</div>`)}
+  <div class="small muted" style="margin-top:4px">支持 Word / PDF（原型演示，不真实上传）</div>`)}
 
   ${lockNote(UI.lockNoteCase, "")}
   `;
@@ -596,10 +597,8 @@ function __showEcDupConfirm(data, dupResults, mode, editId) {
     ${itemsHtml}${extra}
     <p style="margin-top:12px">${UI.duplicateCheckAdvice}</p>`,
     `${btn("返回修改", "gray", "closeModal()")} ${btn("确认非重复并提交", "", `closeModal();window.__doDupConfirm(${JSON.stringify(mode)}, ${JSON.stringify(editId || null)})`)}`), "620px");
-  // 暂存表单数据到 window
+  // 暂存表单数据到 window（mode/editId 已由确认按钮的 onclick 直接传递，无需另存）
   window.__ecFormData = data;
-  window.__ecDupMode = mode;
-  window.__ecDupEditId = editId;
 }
 
 /** 查重确认非重复后真正提交 */
@@ -676,7 +675,7 @@ function __buildEcReviewForm(c, stage) {
 
   ${formRow("质量评价", select(qualityOpts, curQuality, "width:100%"), true, "初审时填入，后续环节可修改")}
   ${formRow("推广价值", select(valueOpts, curValue, "width:100%"), true, "初审时填入，后续环节可修改")}
-  ${formRow("审核意见", `<textarea id="ec_review_comment" class="ipt" rows="3" placeholder="请填写审核意见（选填）"></textarea>`)}
+  ${formRow("审核意见", `<textarea id="ec_review_comment" class="ipt" rows="3" placeholder="选填"></textarea>`)}
   `;
 }
 
@@ -723,20 +722,11 @@ function doEcReviewReturn(id, stage) {
   replaceView();
 }
 
-/* ---------- 恢复默认 ---------- */
-function confirmResetAllEc() {
-  openModal(modalContent("恢复案例库默认数据",
-    `<p>将清除所有案例条目、审核记录、操作日志，恢复为系统默认的 10 条种子数据。</p>
-     <p class="small muted">当前 localStorage 中的案例库数据将被覆盖（不影响标准库、绩效考核等其他模块）。</p>`,
-    `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", `doResetAllEc()`)}`));
-}
-function doResetAllEc() { window.resetAllEc(); closeModal(); toast("已恢复默认数据"); replaceView(); }
-
 /* ---------- 导出（仅示意） ---------- */
 function exportEcCases() {
   const c = window.EC_CASES || [];
   const approved = c.filter((x) => x.reviewStatus === "finalApproved");
-  toast(`已导出 ${approved.length} 条已入库案例为 Excel（示意，实际对接后端导出接口）`);
+  toast(`已导出 ${approved.length} 条已入库案例为 Excel`);
 }
 
 
@@ -765,6 +755,4 @@ window.doDeleteEcCase = doDeleteEcCase;
 window.openEcReviewModal = openEcReviewModal;
 window.doEcReviewApprove = doEcReviewApprove;
 window.doEcReviewReturn = doEcReviewReturn;
-window.confirmResetAllEc = confirmResetAllEc;
-window.doResetAllEc = doResetAllEc;
 window.exportEcCases = exportEcCases;

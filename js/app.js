@@ -57,6 +57,8 @@ function startClock() {
   if (typeof window.loadAllStd === "function") window.loadAllStd();
   // 加载经验案例库模块数据（持久化到 localStorage）
   if (typeof window.loadAllEc === "function") window.loadAllEc();
+  // 加载通知公告数据（持久化到 localStorage，工作台面板与系统管理维护共用）
+  if (typeof window.loadAllNotices === "function") window.loadAllNotices();
   // 尝试从 localStorage 恢复登录会话，否则展示登录页
   const restored = loadSession();
   if (restored) {

@@ -41,7 +41,7 @@ function renderSysAcct() {
   ${pageHeader(PAGES.sysAcct.title, PAGES.sysAcct.desc)}
   ${toolbar(
     `共 ${ACCOUNTS.length} 个账号 · 启用 ${ACCOUNTS.filter((a) => a.st === "启用").length} · 停用 ${ACCOUNTS.filter((a) => a.st === "停用").length}`,
-    `${canAdd ? btn(BTN.addAcct, "sm", "openAddAcct()") : ""} ${btn("↻ 恢复默认", "gray sm", "resetAllAccts()")}`,
+    `${canAdd ? btn(BTN.addAcct, "sm", "openAddAcct()") : ""}`,
   )}
   ${zone(
     table(
@@ -63,10 +63,7 @@ function renderSysAcct() {
   )}`;
 }
 
-/** 刷新当前路由视图（账号操作后调用） */
-function replaceView() {
-  if (typeof window.renderCurView === "function") window.renderCurView();
-}
+/* 注：replaceView 由 views.js 基座统一提供（原同名副本已移除） */
 
 /** 新增账号弹窗 */
 function openAddAcct() {
@@ -182,7 +179,7 @@ function resetPwd(id) {
       "密码重置成功",
       `<p>账号「<b>${a.n}（${a.id}）</b>」的密码已重置为：</p>
        <div style="font-size:28px;font-family:monospace;text-align:center;margin:16px 0;color:var(--primary);font-weight:700">${a.pwd}</div>
-       <div class="small muted">请通知本人尽快登录后修改密码。</div>`,
+       <div class="small muted">请通知本人尽快修改密码。</div>`,
       btn("知道了", "", "closeModal()"),
     ),
   );
@@ -210,23 +207,6 @@ function doDelAcct(id) {
   } else {
     window.toast("删除失败");
   }
-}
-
-/** 恢复全部账号为默认列表 */
-function resetAllAccts() {
-  openModal(
-    modalContent(
-      "确认恢复默认",
-      `<p>确定要将账号列表恢复为默认 6 条（张工、李工、赵工、刘工、admin、陈工）吗？</p>
-       <div class="small muted">当前新增的账号将被清除，角色/状态的自定义修改将被重置。</div>`,
-      `${btn(BTN.cancel, "gray", "closeModal()")} ${btn("确认恢复", "danger", `closeModal();doResetAllAccts()`)}`,
-    ),
-  );
-}
-function doResetAllAccts() {
-  window.resetAccounts();
-  window.toast("账号列表已恢复为默认");
-  replaceView();
 }
 
 /* ---------- 系统：部门管理 ---------- */
@@ -293,7 +273,7 @@ function renderSysDept() {
   ${pageHeader(PAGES.sysDept.title, PAGES.sysDept.desc)}
   ${toolbar(
     `共 ${depts.length} 个部门 · 顶层 ${topCount} 个 · 子部门 ${depts.length - topCount} 个`,
-    `${btn("↻ 恢复默认", "gray sm", "resetAllDepts()")}`,
+    '',
   )}
   ${zone(`
     <table class="tbl">
@@ -410,17 +390,6 @@ function doDelDept(id) {
   else { toast("删除失败：请检查是否存在子部门"); }
 }
 
-/** 恢复默认部门 */
-function resetAllDepts() {
-  openModal(modalContent("确认恢复默认",
-    `<p>确定要将部门列表恢复为默认 15 条吗？</p>
-     <div class="small muted">当前新增的部门将被清除。</div>`,
-    `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", `closeModal();doResetAllDepts()`)}`));
-}
-function doResetAllDepts() {
-  window.resetDepts(); toast("部门列表已恢复为默认"); replaceView();
-}
-
 /* ---------- 系统：角色管理 ---------- */
 function renderSysRole() {
   const canAdd = window.currentCanAction("sys", "sysRole", "add");
@@ -436,7 +405,7 @@ function renderSysRole() {
   ${pageHeader(PAGES.sysRole.title, PAGES.sysRole.desc)}
   ${toolbar(
     `共 ${roles.length} 个角色`,
-    `${canAdd ? btn("+ 新增角色", "sm", "openAddRole()") : ""} ${btn("↻ 恢复默认", "gray sm", "resetAllRoles()")}`,
+    `${canAdd ? btn("+ 新增角色", "sm", "openAddRole()") : ""}`,
   )}
   ${zone(
     table(
@@ -574,7 +543,7 @@ function delRole(key) {
       `<p>确定要删除角色「<b>${r.name}</b>（${key}）」吗？</p>
        ${
          acctCount > 0
-           ? `<div style="background:#fff4f4;border:1px solid #ffd6d6;border-radius:6px;padding:10px 12px;margin:8px 0;font-size:13px;color:var(--error)">⚠ 该角色下有 <b>${acctCount}</b> 个账号，删除后将自动降级为「一般人员（staff）」角色。</div>`
+           ? `<div style="background:#fff4f4;border:1px solid #ffd6d6;border-radius:6px;padding:10px 12px;margin:8px 0;font-size:13px;color:var(--error)">⚠ 该角色下有 <b>${acctCount}</b> 个账号，删除后相关账号将降级为「一般人员」</div>`
            : `<div class="small muted">当前无账号使用此角色，可安全删除。</div>`
        }
        <div class="small muted">删除后，该角色的菜单权限配置将一并清除。</div>`,
@@ -605,35 +574,6 @@ function doDelRole(key) {
   replaceView();
 }
 
-/** 恢复所有角色的权限为默认值 */
-function resetAllRoles() {
-  openModal(
-    modalContent(
-      "确认恢复默认",
-      `<p>确定要将所有角色的权限恢复为默认值吗？</p>
-       <div style="background:#fff7e6;border:1px solid #ffe58f;border-radius:6px;padding:10px 12px;margin:8px 0;font-size:13px;color:#d48806">
-         ⚠ 以下数据将被重置：
-         <ul style="margin:4px 0 0 16px;padding:0">
-           <li>所有内置角色的权限（恢复为种子默认授权）</li>
-           <li>所有自定义角色的权限（恢复为空权限）</li>
-         </ul>
-         以下数据将<b style="color:#389e0d">保留</b>：
-         <ul style="margin:4px 0 0 16px;padding:0">
-           <li>角色本身（包括自定义角色）不会被删除</li>
-           <li>角色的名称、描述不会被修改</li>
-           <li>账号关联关系不受影响</li>
-         </ul>
-       </div>`,
-      `${btn(BTN.cancel, "gray", "closeModal()")} ${btn("确认恢复", "danger", `closeModal();doResetAllRoles()`)}`,
-    ),
-  );
-}
-function doResetAllRoles() {
-  window.resetRoles();
-  window.toast("所有角色的权限已恢复为默认值");
-  replaceView();
-}
-
 /* ---------- 系统：日志与审计 ---------- */
 function renderSysLog() {
   return `
@@ -642,9 +582,9 @@ function renderSysLog() {
     `${filterGroup([
       {
         label: "日志类型",
-        html: select(["全部", UI.logType.platform, UI.logType.subsystem]),
+        html: select(["", UI.logType.platform, UI.logType.subsystem]),
       },
-      { label: "人员", html: select(["全部", "张工", "李工", "赵工", "刘工", "admin"]) },
+      { label: "人员", html: select(["", "张工", "李工", "赵工", "刘工", "admin"]) },
       { label: "日期", html: `<input placeholder="${UI.datePlaceholder}">` },
     ])}
     ${btn(BTN.query, "sm")}`,
@@ -689,7 +629,7 @@ function renderSysLog() {
   ${pageHeader(PAGES.sysDict.title, PAGES.sysDict.desc)}
   ${toolbar(
     btn('+ 新增字典组', 'blue sm', 'openSysDictAddGroup()'),
-    btn('↻ 恢复默认字典', 'gray sm', 'confirmResetSysDict()'),
+    '',
   )}
   ${zone(
     `<table class="tb">
@@ -723,7 +663,7 @@ function doSysDictAddGroup() {
     window.DICT_META = {};
   }
   if (window.DICT_META[k]) { toast('字典键已存在'); return; }
-  // 优先使用 config.js 提供的 updateDictMeta（它会自动持久化）
+  // 优先使用 config-std.js 提供的 updateDictMeta（它会自动持久化）
   if (typeof window.updateDictMeta === 'function') {
     window.updateDictMeta(k, l, d || '');
   } else {
@@ -754,7 +694,7 @@ function doSysDictEditGroup(key) {
   const l = document.getElementById('sd_label')?.value.trim();
   const d = document.getElementById('sd_desc')?.value.trim();
   if (!l) { toast('字典名称必填'); return; }
-  // 优先使用 config.js 提供的 updateDictMeta（它会自动持久化）
+  // 优先使用 config-std.js 提供的 updateDictMeta（它会自动持久化）
   if (typeof window.updateDictMeta === 'function') {
     window.updateDictMeta(key, l, d || '');
   } else {
@@ -777,7 +717,7 @@ function openSysDictDelGroup(key) {
   );
 }
 function doSysDictDelGroup(key) {
-  // 优先使用 config.js 提供的 deleteDictMeta（它会自动持久化）
+  // 优先使用 config-std.js 提供的 deleteDictMeta（它会自动持久化）
   if (typeof window.deleteDictMeta === 'function') {
     window.deleteDictMeta(key);
   } else {
@@ -854,20 +794,6 @@ function doSysDictEditItem(key, oldVal) {
 
 function doSysDictDelItem(key, val) {
   if (window.removeDictItem(key, val)) { toast('已删除'); openSysDictView(key); }
-}function confirmResetSysDict() {
-  openModal(
-    modalContent(
-      "恢复默认字典",
-      `<p>确定要将所有字典恢复到初始默认值吗？</p>
-       <p class="small muted">包括：标准级别、所属领域、归口组织、状态、性质等所有字典。</p>`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", "doResetSysDict()")}`,
-    ),
-  );
-}
-function doResetSysDict() {
-  localStorage.removeItem("oa_sys_dict");
-  if (typeof window.loadAllStd === "function") window.loadAllStd();
-  closeModal(); toast("已恢复默认字典"); replaceView();
 }
 
 /* ---------- 占位视图（外部子系统） ---------- */
@@ -959,7 +885,7 @@ function renderSysMenu() {
   ${pageHeader(PAGES.sysMenu ? PAGES.sysMenu.title : "菜单管理", PAGES.sysMenu ? PAGES.sysMenu.desc : "管理系统的菜单模块和子菜单，修改后角色权限配置将自动同步")}
   ${toolbar(
     `共 ${menus.length} 个模块 · ${menus.reduce((t, [, m]) => t + (m.subs ? m.subs.length : 0), 0)} 个子菜单`,
-    `${canAdd ? btn("+ 新增模块", "sm", "openAddMenuModule()") : ""} ${btn("↻ 恢复默认", "gray sm", "resetAllMenus()")}`,
+    `${canAdd ? btn("+ 新增模块", "sm", "openAddMenuModule()") : ""}`,
   )}
   ${zone(`<div class="menu-list">${cards}</div>`, "🧭 菜单结构", "")}`;
 }
@@ -1039,7 +965,7 @@ function openAddMenuModule() {
             </label>
           </div>`, true)}
        <div id="modNewUrlRow" style="display:none">
-         ${formRow("跳转链接", `<input id="modNewUrl" placeholder="https://example.com" oninput="document.getElementById('modNewUrlRow').classList.toggle('has-value',!!this.value)">`, true, "必须以 http:// 或 https:// 开头，点击菜单将在新窗口打开")}
+         ${formRow("跳转链接", `<input id="modNewUrl" placeholder="https://example.com" oninput="document.getElementById('modNewUrlRow').classList.toggle('has-value',!!this.value)">`, true, "以 http:// 或 https:// 开头")}
        </div>
        <div id="modNewActionsRow">${_renderActionsSelect("modNewActions", [], { isInternal: true, isLeaf: true })}</div>`,
       `${btn("取消", "gray", "closeModal()")} ${btn("确认新增", "", "submitAddMenuModule()")}`,
@@ -1197,9 +1123,9 @@ function doDelMenuModule(key) {
   closeModal();
   window.toast("已删除模块");
   document.dispatchEvent(new CustomEvent('permschange'));
-  // 如果删除的是当前模块，降级到首页
+  // 如果删除的是当前模块，降级到工作台
   if (window.curModule === key) {
-    window.selectModule("home");
+    window.goHome();
   } else {
     replaceView();
   }
@@ -1380,26 +1306,125 @@ function doDelMenuAt(path, key) {
   replaceView();
 }
 
-/** 恢复菜单默认 */
-function resetAllMenus() {
+/* ---------- 系统：通知公告管理 ---------- */
+function renderSysNotice() {
+  const canAdd = window.currentCanAction('sys', 'sysNotice', 'add');
+  const canEdit = window.currentCanAction('sys', 'sysNotice', 'edit');
+  const canDel = window.currentCanAction('sys', 'sysNotice', 'delete');
+  const notices = (window.NOTICES || []).slice().sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || b.createdAt - a.createdAt);
+  const rows = notices.map((n) => {
+    const typeName = (window.NOTICE_TYPES || {})[n.type] || n.type;
+    return `<tr>
+      <td style="max-width:340px"><b>${_escape(n.title)}</b>${n.top ? ' <span class="tag warn">置顶</span>' : ''}</td>
+      <td>${tag(typeName, 'g')}</td>
+      <td>${_escape(n.publisher || '-')}</td>
+      <td>${_fmtDate(n.createdAt)}</td>
+      <td>${n.top ? '是' : '否'}</td>
+      <td>${tag(n.status === 'published' ? NOTICE.statusPublished : NOTICE.statusDraft, n.status === 'published' ? 'ok' : 'muted')}</td>
+      <td style="white-space:nowrap">
+        ${canEdit ? btn('编辑', 'ghost sm', `openEditNotice('${n.id}')`) : ''}
+        ${canEdit ? btn(n.status === 'published' ? NOTICE.revoke : NOTICE.publish, 'sm', `toggleNoticeStatus('${n.id}')`) : ''}
+        ${canDel ? btn('删除', 'danger sm', `confirmDelNotice('${n.id}')`) : ''}
+      </td>
+    </tr>`;
+  }).join('');
+  return `
+  ${pageHeader(PAGES.sysNotice.title, PAGES.sysNotice.desc)}
+  ${toolbar(
+    (canAdd ? btn(BTN.newNotice, 'blue sm', 'openAddNotice()') : ''),
+    '',
+  )}
+  ${zone(
+    `<table class="tb">
+      <thead><tr>
+        ${TH.sysNotice.map((h) => `<th>${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">暂无公告，点击「+ 新增公告」创建</td></tr>'}</tbody>
+    </table>`,
+    '',
+  )}`;
+}
+
+/** 新增公告弹窗 */
+function openAddNotice() {
+  const body = `
+    ${formRow(NOTICE.labelTitle, `<input id="ntcTitle" placeholder="${NOTICE.titlePlaceholder}">`, true)}
+    ${formRow(NOTICE.labelType, select(Object.keys(NOTICE_TYPES).map((k) => NOTICE_TYPES[k]), '通知'))}
+    ${formRow(NOTICE.labelContent, `<textarea id="ntcContent" rows="6" placeholder="${NOTICE.contentPlaceholder}"></textarea>`, true)}
+    ${formRow(NOTICE.labelTop, `<label class="chk-inline"><input type="checkbox" id="ntcTop"><span class="chk-tip">${NOTICE.topTip}</span></label>`)}
+    ${formRow(NOTICE.labelStatus, select([NOTICE.statusPublished, NOTICE.statusDraft], NOTICE.statusPublished))}`;
+  openModal(
+    modalContent(NOTICE.addTitle, body, `${btn(BTN.cancel, 'gray', 'closeModal()')} ${btn(BTN.submit, '', 'submitNoticeForm()')}`),
+    '600px',
+  );
+}
+
+/** 编辑公告弹窗 */
+function openEditNotice(id) {
+  const n = window.findNotice(id);
+  if (!n) return;
+  const body = `
+    ${formRow(NOTICE.labelTitle, `<input id="ntcTitle" value="${_escape(n.title)}" placeholder="${NOTICE.titlePlaceholder}">`, true)}
+    ${formRow(NOTICE.labelType, select(Object.keys(NOTICE_TYPES).map((k) => NOTICE_TYPES[k]), (window.NOTICE_TYPES || {})[n.type] || '通知'))}
+    ${formRow(NOTICE.labelContent, `<textarea id="ntcContent" rows="6" placeholder="${NOTICE.contentPlaceholder}">${_escape(n.content)}</textarea>`, true)}
+    ${formRow(NOTICE.labelTop, `<label class="chk-inline"><input type="checkbox" id="ntcTop" ${n.top ? 'checked' : ''}><span class="chk-tip">${NOTICE.topTip}</span></label>`)}
+    ${formRow(NOTICE.labelStatus, select([NOTICE.statusPublished, NOTICE.statusDraft], n.status === 'published' ? NOTICE.statusPublished : NOTICE.statusDraft))}`;
+  openModal(
+    modalContent(NOTICE.editTitle, body, `${btn(BTN.cancel, 'gray', 'closeModal()')} ${btn(BTN.submit, '', `submitNoticeForm('${n.id}')`)}`),
+    '600px',
+  );
+}
+
+/** 提交新增 / 编辑公告 */
+function submitNoticeForm(id) {
+  const title = (document.getElementById('ntcTitle').value || '').trim();
+  const content = (document.getElementById('ntcContent').value || '').trim();
+  if (!title) { window.toast('请填写公告标题'); return; }
+  if (!content) { window.toast('请填写公告正文'); return; }
+  const typeSel = document.querySelector('#modal select');
+  const typeVal = typeSel ? typeSel.value : '通知';
+  const typeKey = Object.keys(NOTICE_TYPES).find((k) => NOTICE_TYPES[k] === typeVal) || 'notice';
+  const statusSel = document.querySelectorAll('#modal select')[1];
+  const status = statusSel && statusSel.value === NOTICE.statusDraft ? 'draft' : 'published';
+  const data = { title: title, content: content, type: typeKey, top: document.getElementById('ntcTop').checked, status: status };
+  if (id) {
+    window.updateNotice(id, data);
+  } else {
+    window.addNotice(data);
+  }
+  closeModal();
+  window.toast(NOTICE.saved);
+  replaceView();
+}
+
+/** 发布 / 撤回切换 */
+function toggleNoticeStatus(id) {
+  const n = window.findNotice(id);
+  if (!n) return;
+  window.updateNotice(id, { status: n.status === 'published' ? 'draft' : 'published' });
+  window.toast(n.status === 'published' ? '公告已撤回' : '公告已发布');
+  replaceView();
+}
+
+/** 删除公告二次确认 */
+function confirmDelNotice(id) {
+  const n = window.findNotice(id);
+  if (!n) return;
   openModal(
     modalContent(
-      "确认恢复默认菜单",
-      `<div class="warn-box">确定要将菜单恢复为系统默认吗？<br>所有自定义模块/子菜单及其权限配置将丢失。</div>`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", "doResetAllMenus()")}`,
+      '确认删除公告',
+      `<div class="warn-box">${NOTICE.delConfirm.replace('{name}', _escape(n.title))}</div>`,
+      `${btn(BTN.cancel, 'gray', 'closeModal()')} ${btn('确认删除', 'danger', `doDelNotice('${n.id}')`)}`,
     ),
   );
 }
 
-/** 执行恢复菜单默认 */
-function doResetAllMenus() {
-  window.resetMenus();
+function doDelNotice(id) {
+  window.delNotice(id);
   closeModal();
-  window.toast("已恢复默认菜单并重置所有角色权限");
-  document.dispatchEvent(new CustomEvent('permschange'));
+  window.toast(NOTICE.deleted);
   replaceView();
 }
-
 
 /* ---------- 系统管理 VIEWS 填充 ---------- */
 VIEWS.sysAcct = renderSysAcct;
@@ -1408,6 +1433,7 @@ VIEWS.sysRole = renderSysRole;
 VIEWS.sysMenu = renderSysMenu;
 VIEWS.sysLog = renderSysLog;
 VIEWS.sysDict = renderSysDict;
+VIEWS.sysNotice = renderSysNotice;
 
 /* ---------- 系统管理 window 挂载 ---------- */
 window.openAddAcct = openAddAcct;
@@ -1418,8 +1444,6 @@ window.toggleAcct = toggleAcct;
 window.resetPwd = resetPwd;
 window.delAcct = delAcct;
 window.doDelAcct = doDelAcct;
-window.resetAllAccts = resetAllAccts;
-window.doResetAllAccts = doResetAllAccts;
 /* 部门管理 */
 window.openAddDept = openAddDept;
 window.openAddChildDept = openAddChildDept;
@@ -1428,8 +1452,6 @@ window.openEditDept = openEditDept;
 window.submitEditDept = submitEditDept;
 window.confirmDelDept = confirmDelDept;
 window.doDelDept = doDelDept;
-window.resetAllDepts = resetAllDepts;
-window.doResetAllDepts = doResetAllDepts;
 /* 角色管理 */
 window.openPermConfigFor = openPermConfigFor;
 window.openAddRole = openAddRole;
@@ -1438,8 +1460,6 @@ window.openEditRole = openEditRole;
 window.submitEditRole = submitEditRole;
 window.delRole = delRole;
 window.doDelRole = doDelRole;
-window.resetAllRoles = resetAllRoles;
-window.doResetAllRoles = doResetAllRoles;
 /* 菜单管理 */
 window.toggleMenuCard = toggleMenuCard;
 window.openAddMenuModule = openAddMenuModule;
@@ -1457,11 +1477,7 @@ window.openEditMenuAt = openEditMenuAt;
 window.submitEditMenuAt = submitEditMenuAt;
 window.delMenuAt = delMenuAt;
 window.doDelMenuAt = doDelMenuAt;
-window.resetAllMenus = resetAllMenus;
-window.doResetAllMenus = doResetAllMenus;
 
-window.confirmResetSysDict = confirmResetSysDict;
-window.doResetSysDict = doResetSysDict;
 window.openSysDictAddGroup = openSysDictAddGroup;
 window.doSysDictAddGroup = doSysDictAddGroup;
 window.openSysDictEditGroup = openSysDictEditGroup;

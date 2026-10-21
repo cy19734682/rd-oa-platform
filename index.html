@@ -30,7 +30,7 @@
         <div class="en">R&amp;D OA Integrated Platform</div>
         <div class="login-box">
           <div class="login-tip" id="loginTip">
-            请先登录后才能访问本系统（未登录已拦截子系统访问）
+            请先登录后访问本系统
           </div>
           <label class="req">用户名 Account</label>
           <input id="lgUser" value="" placeholder="请输入工号 / 账号" />
@@ -38,10 +38,10 @@
           <input id="lgPwd" type="password" value="" placeholder="请输入密码" />
           <button class="lg-btn" onclick="doLogin()">登 录</button>
           <div class="lg-warm">
-            温馨提示：如密码遗失，请联系工程技术研究中心！
+            如密码遗失，请联系工程技术研究中心
           </div>
           <div class="lg-demo">
-            演示账号（点击自动填充账号与密码，角色由工号自动识别）：
+            演示账号（点击自动填充）：
             <div id="lgDemoList" class="lg-demo-list"></div>
           </div>
           <div class="lg-manual-entry">
@@ -56,7 +56,7 @@
     <!-- ============ 应用 ============ -->
     <div id="app" style="display: none">
       <div class="header">
-        <div class="logo" onclick="selectModule('home')">
+        <div class="logo" onclick="goHome()">
           <svg
             class="logo-icon"
             viewBox="0 0 1024 1024"
@@ -69,8 +69,17 @@
           </svg>
           研发OA综合平台
         </div>
-        <div class="topmenu" id="topmenu"></div>
         <div class="h-right">
+          <div class="h-search">
+            <span class="h-search-icon">🔍</span>
+            <input
+              id="globalSearchInput"
+              class="h-search-input"
+              type="text"
+              placeholder="全局搜索：标准 / 案例 / 研发公共"
+              onkeydown="if(event.key==='Enter')openSearch(this.value)"
+            />
+          </div>
           <div class="top-clock" id="topClock">--:--:--</div>
           <div
             class="bell"
@@ -91,19 +100,6 @@
         </div>
       </div>
       <div class="body">
-        <div class="sidebar" id="sidebar">
-          <div class="side-head">
-            <span class="side-title" id="sideTitle">研发公共</span>
-            <button
-              class="collapse-btn"
-              onclick="toggleSide()"
-              title="收起/展开"
-            >
-              ≡
-            </button>
-          </div>
-          <div class="side-nav" id="sideNav"></div>
-        </div>
         <div class="main">
           <div class="crumb" id="crumb"></div>
           <div class="content" id="content"></div>
@@ -122,7 +118,14 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <!-- 数据层：基座 + 业务模块（必须在 auth.js 之前，因为 auth.js 依赖 ROLES/MENUS/ALL_ACTIONS 等常量） -->
-    <script src="js/modules/config.js"></script>
+    <!-- 配置基座（原 config.js 已按内聚性拆分，加载顺序不可调整） -->
+    <script src="js/modules/config-base.js"></script>
+    <script src="js/modules/config-roles.js"></script>
+    <script src="js/modules/config-menu.js"></script>
+    <script src="js/modules/config-accounts.js"></script>
+    <script src="js/modules/config-depts.js"></script>
+    <script src="js/modules/config-mock.js"></script>
+    <script src="js/modules/config-notices.js"></script>
     <script src="js/modules/config-assets.js"></script>
     <script src="js/modules/config-pa.js"></script>
     <script src="js/modules/config-std.js"></script>
@@ -134,10 +137,18 @@
     <!-- 视图层：业务模块先注册，基座最后填充 VIEWS.home 和通用工具 -->
     <script src="js/modules/views-std.js"></script>
     <script src="js/modules/views-ec.js"></script>
-    <script src="js/modules/views-pa.js"></script>
+    <!-- 绩效管理视图（原 views-pa.js 已按内聚性拆分，common 必须首先加载） -->
+    <script src="js/modules/views-pa-common.js"></script>
+    <script src="js/modules/views-pa-template.js"></script>
+    <script src="js/modules/views-pa-table.js"></script>
+    <script src="js/modules/views-pa-task.js"></script>
+    <script src="js/modules/views-pa-flow.js"></script>
+    <script src="js/modules/views-pa-yearly.js"></script>
+    <script src="js/modules/views-pa-peer.js"></script>
     <script src="js/modules/views-sys.js"></script>
     <script src="js/modules/views-assets.js"></script>
     <script src="js/modules/views.js"></script>
+    <script src="js/modules/views-portal.js"></script>
 
     <script src="js/app.js"></script>
   </body>

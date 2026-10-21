@@ -27,7 +27,10 @@ function openModal(h, options) {
     fullscreen = false;
   }
 
-  if (width !== undefined && width !== null && width !== "") {
+  if (fullscreen) {
+    // 全屏模式由 CSS（.modal-mask.fullscreen .modal）控制尺寸，内联宽度会让 width:100% 失效
+    m.style.width = "";
+  } else if (width !== undefined && width !== null && width !== "") {
     m.style.width = typeof width === "number" ? `${width}px` : width;
   } else {
     m.style.width = "";
@@ -35,6 +38,30 @@ function openModal(h, options) {
 
   mask.classList.toggle("fullscreen", fullscreen);
   mask.style.display = "flex";
+}
+
+/** 还原窗口态弹窗的宽度（全屏前的内联宽度，toggleModalFullscreen 暂存） */
+let __modalWinWidth = "";
+
+/** 全屏 / 还原切换：全屏时左、右、下占满屏幕，顶部留出 header 高度（64px）
+ * @param {HTMLElement} [btnEl] - 触发按钮，切换后自动更新其图标（⛶ ⇄ ⤢）与 title
+ */
+function toggleModalFullscreen(btnEl) {
+  const mask = document.getElementById("mask");
+  const m = document.getElementById("modal");
+  const isFs = mask.classList.toggle("fullscreen");
+  if (m) {
+    if (isFs) {
+      __modalWinWidth = m.style.width || "";
+      m.style.width = "";
+    } else {
+      m.style.width = __modalWinWidth;
+    }
+  }
+  if (btnEl) {
+    btnEl.innerHTML = isFs ? "⤢" : "⛶";
+    btnEl.title = isFs ? "还原" : "全屏";
+  }
 }
 
 /** 关闭模态弹窗 */
@@ -51,7 +78,7 @@ function showReturnModal() {
   openModal(
     modalContent(
       UI.returnTitle,
-      formRow("退回原因", `<textarea id="returnReason" rows="3" placeholder="${UI.returnPlaceholder}"></textarea>`, true, "请如实填写退回原因，提交后通知提交人"),
+      formRow("退回原因", `<textarea id="returnReason" rows="3" placeholder="${UI.returnPlaceholder}"></textarea>`, true, "提交后通知提交人"),
       `${btn("取消", "gray", "closeModal()")} ${btn(BTN.confirmReturn, "", `closeModal();toast('${TOAST.ecReturnOk}')`)}`,
     ),
   );
@@ -70,11 +97,6 @@ function toggleAvatar(e) {
 function closeAvatarMenu() {
   const m = document.getElementById("avatarMenu");
   if (m) m.style.display = "none";
-}
-
-/** 切换左侧边栏收起/展开 */
-function toggleSide() {
-  document.getElementById("sidebar").classList.toggle("collapsed");
 }
 
 /* ---------- 全局事件绑定 ---------- */
@@ -96,5 +118,4 @@ window.closeModal = closeModal;
 window.openModal = openModal;
 window.toggleAvatar = toggleAvatar;
 window.closeAvatarMenu = closeAvatarMenu;
-window.toggleSide = toggleSide;
 window.showReturnModal = showReturnModal;

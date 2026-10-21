@@ -12,6 +12,36 @@ let __subDesignKw = "";  // 设计规范 - 当前关键词
 let __subCheckCat = "";  // 评审Checklist - 当前分类筛选
 let __subCheckKw = "";   // 评审Checklist - 当前关键词
 
+/* ---------- 附件上传辅助（原型演示：仅记录文件名/大小元数据，不真实上传） ---------- */
+
+/** 文件大小格式化：字节 → B / KB / MB */
+const __fmtFileSize = (bytes) => {
+  if (bytes === null || bytes === undefined || bytes === "") return "";
+  const n = Number(bytes);
+  if (!isFinite(n) || n < 0) return "";
+  if (n < 1024) return n + "B";
+  if (n < 1024 * 1024) return Math.round(n / 1024) + "KB";
+  return (n / 1024 / 1024).toFixed(1) + "MB";
+};
+
+/** 由 file input 选中的文件构造附件元数据（与标准库/案例库的 attachments 结构一致），无文件返回 null */
+const __specFileAttachment = (file) => {
+  if (!file) return null;
+  const name = String(file.name || "").trim();
+  if (!name) return null;
+  const ext = name.indexOf(".") > 0 ? name.split(".").pop().toLowerCase() : "bin";
+  return { type: ext, name, size: __fmtFileSize(file.size) };
+};
+
+/** 附件 tag 展示（空态「无附件」），详情弹窗与编辑表单共用 */
+const __specAttachHtml = (attachments) => {
+  const list = Array.isArray(attachments) ? attachments : [];
+  if (!list.length) return tag("无附件", "muted");
+  return list
+    .map((a) => tag(`${String(a.type || "").toUpperCase()} · ${_escape(a.name || "")} · ${_escape(a.size || "")}`, "g"))
+    .join(" ");
+};
+
 /**
  * 生成带实时预览的 Markdown 编辑器 HTML
  * @param {string} inputId - textarea 的 id
@@ -79,7 +109,7 @@ function renderSubSpec() {
   };
 
   const cardTpl = filtered.length === 0
-    ? `<div class="empty-zone">${canAdd ? "暂无开发规范，点击右上角「+ 新增」创建" : "暂无开发规范"}</div>`
+    ? `<div class="empty-zone">${canAdd ? "暂无开发规范，点击「+ 新增」创建" : "暂无开发规范"}</div>`
     : filtered.map((x) => `
         <div class="asset-card" onclick="openAssetSpecDetail('${x.id}')">
           <div class="asset-card-header">
@@ -114,7 +144,6 @@ function renderSubSpec() {
   // toolbar 右侧按钮：仅显示有权限的操作
   const toolbarBtns = [];
   if (canAdd) toolbarBtns.push(btn("+ 新增规范", "sm", "openAddAssetSpec()"));
-  if (canExport) toolbarBtns.push(btn("↻ 恢复默认", "gray sm", "resetAllAssetSpecs()"));
 
   return `
     ${pageHeader(PAGES["sub-spec"].title, PAGES["sub-spec"].desc)}
@@ -146,7 +175,7 @@ function openAssetSpecDetail(id) {
       <span>创建 ${_date(item.createdAt)}</span>
       <span>更新 ${_date(item.updatedAt)}</span>
     </div>`;
-  const body = meta + `<div>${_renderMd(item.content || "")}</div>`;
+  const body = meta + `<div style="margin-bottom:14px">📎 附件：${__specAttachHtml(item.attachments)}</div>` + `<div>${_renderMd(item.content || "")}</div>`;
   const footer = `
     <button class="btn ghost" onclick="closeModal()">关闭</button>
     ${canEdit ? `<button class="btn" onclick="closeModal();openEditAssetSpec('${item.id}')">编辑</button>` : ""}
@@ -178,7 +207,7 @@ function renderSubTpl() {
   });
 
   const cardTpl = filtered.length === 0
-    ? `<div class="empty-zone">${canAdd ? "暂无模板，点击右上角「+ 新增」创建" : "暂无模板"}</div>`
+    ? `<div class="empty-zone">${canAdd ? "暂无模板，点击「+ 新增」创建" : "暂无模板"}</div>`
     : filtered.map((x) => `
         <div class="asset-card" onclick="openAssetTplDetail('${x.id}')">
           <div class="asset-card-header">
@@ -223,7 +252,6 @@ function renderSubTpl() {
 
   const toolbarBtns = [];
   if (canAdd) toolbarBtns.push(btn("+ 新增模板", "sm", "openAddAssetTpl()"));
-  toolbarBtns.push(btn("↻ 恢复默认", "gray sm", "resetAllAssetTpls()"));
 
   return `
     ${pageHeader(PAGES["sub-tpl"].title, PAGES["sub-tpl"].desc)}
@@ -255,7 +283,7 @@ function openAssetTplDetail(id) {
       <span>创建 ${_date(item.createdAt)}</span>
       <span>更新 ${_date(item.updatedAt)}</span>
     </div>`;
-  const body = meta + `<pre class="tpl-preview">${_escape(item.content || "")}</pre>`;
+  const body = meta + `<div>${_renderMd(item.content || "")}</div>`;
   const footer = `
     <button class="btn ghost" onclick="closeModal()">关闭</button>
     ${canEdit ? `<button class="btn" onclick="closeModal();openEditAssetTpl('${item.id}')">编辑</button>` : ""}
@@ -284,7 +312,7 @@ function renderSubDesign() {
   });
 
   const cardTpl = filtered.length === 0
-    ? `<div class="empty-zone">${canAdd ? "暂无设计规范，点击右上角「+ 新增」创建" : "暂无设计规范"}</div>`
+    ? `<div class="empty-zone">${canAdd ? "暂无设计规范，点击「+ 新增」创建" : "暂无设计规范"}</div>`
     : filtered.map((x) => `
         <div class="design-card" onclick="openAssetDesignDetail('${x.id}')">
           <div class="design-card-cover" style="background:${x.coverColor || '#1890ff'}"></div>
@@ -321,7 +349,6 @@ function renderSubDesign() {
 
   const toolbarBtns = [];
   if (canAdd) toolbarBtns.push(btn("+ 新增规范", "sm", "openAddAssetDesign()"));
-  toolbarBtns.push(btn("↻ 恢复默认", "gray sm", "resetAllAssetDesigns()"));
 
   return `
     ${pageHeader(PAGES["sub-design"].title, PAGES["sub-design"].desc)}
@@ -383,7 +410,7 @@ function renderSubCheck() {
   });
 
   const cardTpl = filtered.length === 0
-    ? `<div class="empty-zone">${canAdd ? "暂无 Checklist，点击右上角「+ 新增」创建" : "暂无 Checklist"}</div>`
+    ? `<div class="empty-zone">${canAdd ? "暂无 Checklist，点击「+ 新增」创建" : "暂无 Checklist"}</div>`
     : filtered.map((x) => {
         const total = (x.items || []).length;
         const done = (x.items || []).filter((i) => i.checked).length;
@@ -425,7 +452,6 @@ function renderSubCheck() {
 
   const toolbarBtns = [];
   if (canAdd) toolbarBtns.push(btn("+ 新增 Checklist", "sm", "openAddAssetCheck()"));
-  toolbarBtns.push(btn("↻ 恢复默认", "gray sm", "resetAllAssetChecks()"));
 
   return `
     ${pageHeader(PAGES["sub-check"].title, PAGES["sub-check"].desc)}
@@ -522,6 +548,8 @@ function openAddAssetSpec() {
         ${formRow("版本号", `<input id="as_ver" class="ipt" value="v1.0" />`)}
         ${formRow("标签", `<input id="as_tags" class="ipt" placeholder="英文逗号分隔，如：JS, 前端" />`)}
         ${formRow("描述", `<textarea id="as_desc" class="ipt" rows="2" placeholder="简短描述该规范的范围和目的"></textarea>`)}
+        ${formRow("附件", `<input id="as_file" type="file" class="ipt" style="padding:6px" accept=".pdf,.doc,.docx,.md,.txt,.zip,.png,.jpg" />
+        <div class="small muted" style="margin-top:4px">原型演示：仅记录文件名与大小，不真实上传文件</div>`)}
         ${formRow("正文 (Markdown)", _mdEditor("as_content", "as_preview", "", "支持 Markdown：## 标题、- 列表、`代码`、**加粗** 等", 12))}
       </div>`,
       `${btn("取消", "gray", "closeModal()")} ${btn("保存", "", "submitAddAssetSpec()")}`
@@ -540,6 +568,7 @@ function submitAddAssetSpec() {
   if (!title) { toast("请填写标题"); return; }
   const tagsRaw = document.getElementById("as_tags").value.trim();
   const tags = tagsRaw ? tagsRaw.split(/[,，]/).map((t) => t.trim()).filter(Boolean) : [];
+  const attach = __specFileAttachment(document.getElementById("as_file").files[0]);
   const item = addAssetSpec({
     title,
     category: document.getElementById("as_cat").value,
@@ -547,6 +576,7 @@ function submitAddAssetSpec() {
     desc: document.getElementById("as_desc").value.trim(),
     content: document.getElementById("as_content").value,
     tags,
+    attachments: attach ? [attach] : [],
   });
   closeModal();
   toast("已新增规范：" + item.title);
@@ -572,6 +602,9 @@ function openEditAssetSpec(id) {
         ${formRow("版本号", `<input id="es_ver" class="ipt" value="${_escape(item.version || '')}" />`)}
         ${formRow("标签", `<input id="es_tags" class="ipt" value="${_escape((item.tags||[]).join(', '))}" />`)}
         ${formRow("描述", `<textarea id="es_desc" class="ipt" rows="2">${_escape(item.desc || '')}</textarea>`)}
+        ${formRow("附件", `<div style="margin-bottom:6px">当前附件：${__specAttachHtml(item.attachments)}</div>
+        <input id="es_file" type="file" class="ipt" style="padding:6px" accept=".pdf,.doc,.docx,.md,.txt,.zip,.png,.jpg" />
+        <div class="small muted" style="margin-top:4px">原型演示：仅记录文件名与大小，不真实上传文件；选择新文件将替换当前附件</div>`)}
         ${formRow("正文 (Markdown)", _mdEditor("es_content", "es_preview", item.content, "", 12))}
       </div>`,
       `${btn("取消", "gray", "closeModal()")} ${btn("保存", "", `submitEditAssetSpec('${id}')`)}`
@@ -588,14 +621,18 @@ function submitEditAssetSpec(id) {
   }
   const tagsRaw = document.getElementById("es_tags").value.trim();
   const tags = tagsRaw ? tagsRaw.split(/[,，]/).map((t) => t.trim()).filter(Boolean) : [];
-  updateAssetSpec(id, {
+  // 附件：选择了新文件才替换，未选择则保留原附件
+  const attach = __specFileAttachment(document.getElementById("es_file").files[0]);
+  const patch = {
     title: document.getElementById("es_title").value.trim(),
     category: document.getElementById("es_cat").value,
     version: document.getElementById("es_ver").value.trim(),
     desc: document.getElementById("es_desc").value.trim(),
     content: document.getElementById("es_content").value,
     tags,
-  });
+  };
+  if (attach) patch.attachments = [attach];
+  updateAssetSpec(id, patch);
   closeModal();
   toast("已保存");
   replaceView();
@@ -627,26 +664,6 @@ function doDelAssetSpec(id) {
   deleteAssetSpec(id);
   closeModal();
   toast("已删除");
-  replaceView();
-}
-function resetAllAssetSpecs() {
-  // 业务级权限守卫：恢复默认属于破坏性操作，需要 delete 或 export 权限
-  if (window.currentCanAction && !window.currentCanAction("asset", "sub-spec", "export")) {
-    toast("您没有恢复默认的权限，请联系管理员");
-    return;
-  }
-  openModal(
-    modalContent(
-      "恢复默认",
-      `<p>将清空所有自定义开发规范，恢复为系统默认的 5 条示例数据。</p>`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", "doResetAllAssetSpecs()")}`
-    )
-  );
-}
-function doResetAllAssetSpecs() {
-  resetAssetSpecs();
-  closeModal();
-  toast("已恢复默认");
   replaceView();
 }
 function downloadAssetSpec(id) {
@@ -762,21 +779,6 @@ function doDelAssetTpl(id) {
   toast("已删除");
   replaceView();
 }
-function resetAllAssetTpls() {
-  openModal(
-    modalContent(
-      "恢复默认",
-      `<p>将清空所有自定义模板，恢复为系统默认的 5 条示例数据。</p>`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", "doResetAllAssetTpls()")}`
-    )
-  );
-}
-function doResetAllAssetTpls() {
-  resetAssetTpls();
-  closeModal();
-  toast("已恢复默认");
-  replaceView();
-}
 function downloadAssetTpl(id) {
   const item = findAssetTpl(id);
   if (!item) return;
@@ -888,21 +890,6 @@ function doDelAssetDesign(id) {
   deleteAssetDesign(id);
   closeModal();
   toast("已删除");
-  replaceView();
-}
-function resetAllAssetDesigns() {
-  openModal(
-    modalContent(
-      "恢复默认",
-      `<p>将清空所有自定义设计规范，恢复为系统默认的 5 条示例数据。</p>`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", "doResetAllAssetDesigns()")}`
-    )
-  );
-}
-function doResetAllAssetDesigns() {
-  resetAssetDesigns();
-  closeModal();
-  toast("已恢复默认");
   replaceView();
 }
 function downloadAssetDesign(id) {
@@ -1035,21 +1022,6 @@ function doDelAssetCheck(id) {
   toast("已删除");
   replaceView();
 }
-function resetAllAssetChecks() {
-  openModal(
-    modalContent(
-      "恢复默认",
-      `<p>将清空所有自定义 Checklist，恢复为系统默认的 4 条示例数据。</p>`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("确认恢复", "danger", "doResetAllAssetChecks()")}`
-    )
-  );
-}
-function doResetAllAssetChecks() {
-  resetAssetChecks();
-  closeModal();
-  toast("已恢复默认");
-  replaceView();
-}
 
 
 /* ---------- 过程资产 VIEWS 填充 ---------- */
@@ -1066,8 +1038,6 @@ window.openEditAssetSpec = openEditAssetSpec;
 window.submitEditAssetSpec = submitEditAssetSpec;
 window.delAssetSpec = delAssetSpec;
 window.doDelAssetSpec = doDelAssetSpec;
-window.resetAllAssetSpecs = resetAllAssetSpecs;
-window.doResetAllAssetSpecs = doResetAllAssetSpecs;
 window.downloadAssetSpec = downloadAssetSpec;
 window.openAssetSpecDetail = openAssetSpecDetail;
 
@@ -1078,8 +1048,6 @@ window.openEditAssetTpl = openEditAssetTpl;
 window.submitEditAssetTpl = submitEditAssetTpl;
 window.delAssetTpl = delAssetTpl;
 window.doDelAssetTpl = doDelAssetTpl;
-window.resetAllAssetTpls = resetAllAssetTpls;
-window.doResetAllAssetTpls = doResetAllAssetTpls;
 window.downloadAssetTpl = downloadAssetTpl;
 window.openAssetTplDetail = openAssetTplDetail;
 
@@ -1090,8 +1058,6 @@ window.openEditAssetDesign = openEditAssetDesign;
 window.submitEditAssetDesign = submitEditAssetDesign;
 window.delAssetDesign = delAssetDesign;
 window.doDelAssetDesign = doDelAssetDesign;
-window.resetAllAssetDesigns = resetAllAssetDesigns;
-window.doResetAllAssetDesigns = doResetAllAssetDesigns;
 window.downloadAssetDesign = downloadAssetDesign;
 window.openAssetDesignDetail = openAssetDesignDetail;
 
@@ -1105,5 +1071,3 @@ window.openEditAssetCheck = openEditAssetCheck;
 window.submitEditAssetCheck = submitEditAssetCheck;
 window.delAssetCheck = delAssetCheck;
 window.doDelAssetCheck = doDelAssetCheck;
-window.resetAllAssetChecks = resetAllAssetChecks;
-window.doResetAllAssetChecks = doResetAllAssetChecks;

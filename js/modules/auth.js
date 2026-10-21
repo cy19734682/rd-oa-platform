@@ -263,8 +263,8 @@ function doLogin() {
   window.closeAvatarMenu && window.closeAvatarMenu();
   // 清除"待办已关闭"标记，使本次登录再次弹窗
   try { sessionStorage.removeItem("oa_todo_dismissed"); } catch (e) {}
-  // 跳转到第一个有权限的模块（而非硬编码 home）
-  window.selectModule(firstKey);
+  // 跳转到 OA 门户工作台（由用户按权限点选板块进入）
+  window.goHome && window.goHome();
   // 登录成功后更新铃铛角标并弹窗提醒待办事项
   window.updateBellBadge && window.updateBellBadge();
   setTimeout(() => { window.showLoginTodoModal && window.showLoginTodoModal(); }, 300);
@@ -412,8 +412,6 @@ function bindPermConfigEvents() {
   });
   const saveBtn = modal.querySelector(".pc-save");
   if (saveBtn) saveBtn.addEventListener("click", savePermConfig);
-  const resetBtn = modal.querySelector(".pc-reset");
-  if (resetBtn) resetBtn.addEventListener("click", resetPermConfig);
 }
 
 /** 递归向上回算父级 cb 的 checked/indeterminate 状态 */
@@ -454,8 +452,7 @@ function buildPermConfigHTML() {
     .join("");
   const footBtns = isDisabled
     ? `<span class="pc-readonly-lock">🔒 ${PERM.note}</span>`
-    : `<button type="button" class="btn gray pc-reset">${PERM.reset}</button>
-       <button type="button" class="btn pc-save">${PERM.save}</button>`;
+    : `<button type="button" class="btn pc-save">${PERM.save}</button>`;
   const body = `
     <div class="perm-config">
       <div class="pc-tip">当前正在配置角色「${roleName}」的模块和菜单访问权限${isDisabled ? "（内置只读，不可修改）" : ""}。勾选后该角色用户可访问对应模块。</div>
@@ -697,17 +694,6 @@ function savePermConfig() {
   closePermConfig();
   document.dispatchEvent(new CustomEvent('permschange'));
   window.toast(PERM.saved.replace('{role}', ROLES[roleKey].name));
-}
-
-/** 将当前角色的权限恢复为默认值（与 resetRoles 对单角色的行为一致，不影响其他角色） */
-function resetPermConfig() {
-  const roleKey = _permConfigRole;
-  if (!roleKey) return;
-  ROLES[roleKey].perms = window.buildDefaultRolePerms(roleKey);
-  saveRoles();
-  closePermConfig();
-  document.dispatchEvent(new CustomEvent('permschange'));
-  window.toast(`角色「${ROLES[roleKey].name}」权限已恢复默认`);
 }
 
 /* ---------- 挂载到 window（供 HTML 内联 onclick 调用 + 跨模块调用） ---------- */

@@ -1,6 +1,6 @@
 /* ========== 标准库模块 · config-std.js ========== */
 /* 包含：标准 / 字典 / 日志 种子数据与全量 CRUD */
-/* 依赖基座 config.js 中的 _loadArr / _save 辅助函数 */
+/* 依赖基座 config-base.js 中的 _loadArr / _save 辅助函数 */
 
 /* ---------- 标准库模块 localStorage Key ---------- */
 const OA_STD_STANDARDS = "oa_std_standards";
@@ -224,13 +224,6 @@ function deleteDictMeta(key) {
 function loadStdLogs() { STD_LOGS = _loadArr(OA_STD_LOGS, DEFAULT_STD_LOGS); _save(OA_STD_LOGS, STD_LOGS); }
 function saveStdLogs() { _save(OA_STD_LOGS, STD_LOGS); }
 function loadAllStd() { loadStandards(); loadStdDicts(); loadDictMeta(); loadStdLogs(); }
-function resetAllStd() {
-  localStorage.removeItem(OA_STD_STANDARDS);
-  localStorage.removeItem(OA_SYS_DICT);
-  localStorage.removeItem(OA_SYS_DICT_META);
-  localStorage.removeItem(OA_STD_LOGS);
-  loadAllStd();
-}
 
 /* ---------- 标准库 CRUD ---------- */
 function findStandard(id) { return (STANDARDS || []).find((s) => s.id === id); }
@@ -356,7 +349,7 @@ function searchStandards({ keyword, level, domain, status, yearRange, searchBody
   return list.filter((s) => {
     // 默认隐藏已被代替的历史版本（replaced），只有详情页历史版本侧栏能看到
     // 废止（abolished）保留在列表中，用户可通过筛选查看
-    if ((!status || status === "全部") && s.status === "replaced") return false;
+    if (!status && s.status === "replaced") return false;
     if (kw) {
       const hay = (s.stdNo + " " + s.nameCn + " " + s.nameEn + " " + (s.summary || "")).toLowerCase();
       if (searchBody && s.body) {
@@ -365,10 +358,10 @@ function searchStandards({ keyword, level, domain, status, yearRange, searchBody
         if (!hay.includes(kw)) return false;
       }
     }
-    if (level && level !== "全部" && s.level !== level) return false;
-    if (domain && domain !== "全部" && s.domain !== domain) return false;
-    if (status && status !== "全部" && s.status !== status) return false;
-    if (yearRange && yearRange !== "全部") {
+    if (level && s.level !== level) return false;
+    if (domain && s.domain !== domain) return false;
+    if (status && s.status !== status) return false;
+    if (yearRange) {
       const y = s.year || 0;
       if (yearRange === "更早") { if (y >= 2019) return false; }
       else if (yearRange === "2020-2024") { if (y < 2020 || y > 2024) return false; }
@@ -440,7 +433,6 @@ window.removeStdDictItem = removeStdDictItem;
 window.getStdBoardStats = getStdBoardStats;
 window.logStdOp = logStdOp;
 window.loadAllStd = loadAllStd;
-window.resetAllStd = resetAllStd;
 // 注意：DICT_META 在 loadDictMeta() 内才会被正确赋值，这里先占位
 // loadAllStd() 调用 loadDictMeta() 后会自动更新 window.DICT_META
 window.DICT_META = DICT_META;
