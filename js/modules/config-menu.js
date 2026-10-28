@@ -85,22 +85,6 @@ const DEFAULT_MODULES = {
         icon: "🚦",
         order: 2,
         actions: ["view", "export"],
-      },
-      {
-        key: "pms",
-        name: "项目管理系统",
-        icon: "📁",
-        order: 3,
-        type: "external",
-        url: "http://192.168.1.19/devsuite/#home",
-      },
-      {
-        key: "board",
-        name: "项目看板",
-        icon: "📊",
-        order: 4,
-        type: "external",
-        url: "http://192.168.215.23/axshare/ppb/index.html",
       }],
   },
   dev: {
@@ -109,15 +93,7 @@ const DEFAULT_MODULES = {
     order: 3,
     subs: [
       { key: "stdHome", name: "标准库", icon: "📚", order: 1, actions: ["view", "export", "add", "edit", "delete"] },
-      { key: "ec", name: "经验案例库", icon: "💡", order: 2, actions: ["view", "add", "edit", "delete", "export", "admin"] },
-      {
-        key: "sub-auto",
-        name: "自动化测试平台",
-        icon: "🤖",
-        order: 5,
-        type: "external",
-        url: "http://192.168.215.23/pd/uml/index.html",
-      }],
+      { key: "ec", name: "经验案例库", icon: "💡", order: 2, actions: ["view", "add", "edit", "delete", "export", "admin"] }],
   },
   asset: {
     name: "过程资产",

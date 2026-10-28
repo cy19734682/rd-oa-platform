@@ -2,20 +2,24 @@
  * 包含：
  *   ① 全局搜索（顶部搜索框 → 独立搜索页 → 点击弹窗查看详情）
  *      搜索范围：研发公共（标准库 / 经验案例库）+ 过程资产（开发规范 / 文档模板 / 设计规范 / 评审 Checklist）
- *   ② 通知公告面板（工作台右侧，数据来自 config-notices.js）
- *   ③ 我的常用应用（工作台磁贴行，按账号持久化）
+ *      （v5.5：子系统窗口只搜本子系统内容，且仅 dev / asset 子系统保留搜索框）
+ *   ② 通知公告（v4：侧栏公告下线，最新一条置于首页 crumb 公告条，
+ *      v5.9 起去掉「查看更多」，只展示最新一条；数据来自 config-notices.js）
+ *   ③ 我的常用应用（首页左侧栏紧凑磁贴，按账号持久化）
+ *   ④ 首页左侧栏用户卡（v3 起随首页侧栏布局新增，v4 起侧栏仅剩用户卡 + 常用应用）
  * 路由状态 __searchQuery / __searchSrc 定义在 router.js（属路由状态，随路由持久化）
  * 本文件必须在 router.js 之后加载（openSearch 等会操作路由状态）
  */
 
-/* ---------- 搜索数据源定义 ---------- */
+/* ---------- 搜索数据源定义 ----------
+ * enter 为「进入」按钮行为（v2：跨窗口跳转助手，同窗口则站内落地） */
 const SEARCH_SOURCES = {
-  std:    { label: "标准库",          icon: "📚", mod: "dev",   color: "#52c41a", enter: "selectModule('dev');selectSub('stdHome')" },
-  ec:     { label: "经验案例库",      icon: "💡", mod: "dev",   color: "#13c2c2", enter: "selectModule('dev');selectSub('ec')" },
-  spec:   { label: "开发规范",        icon: "📐", mod: "asset", color: "#1677ff", enter: "selectModule('asset');selectSub('sub-spec')" },
-  tpl:    { label: "文档模板",        icon: "📄", mod: "asset", color: "#722ed1", enter: "selectModule('asset');selectSub('sub-tpl')" },
-  design: { label: "设计规范",        icon: "🎨", mod: "asset", color: "#eb2f96", enter: "selectModule('asset');selectSub('sub-design')" },
-  check:  { label: "评审 Checklist",  icon: "✅", mod: "asset", color: "#fa8c16", enter: "selectModule('asset');selectSub('sub-check')" },
+  std:    { label: "标准库",          icon: "📚", mod: "dev",   color: "#52c41a", view: "stdHome",   enter: "__jumpSub('dev','stdHome')" },
+  ec:     { label: "经验案例库",      icon: "💡", mod: "dev",   color: "#13c2c2", view: "ec",        enter: "__jumpSub('dev','ec')" },
+  spec:   { label: "开发规范",        icon: "📐", mod: "asset", color: "#1677ff", view: "sub-spec",  enter: "__jumpSub('asset','sub-spec')" },
+  tpl:    { label: "文档模板",        icon: "📄", mod: "asset", color: "#722ed1", view: "sub-tpl",   enter: "__jumpSub('asset','sub-tpl')" },
+  design: { label: "设计规范",        icon: "🎨", mod: "asset", color: "#eb2f96", view: "sub-design", enter: "__jumpSub('asset','sub-design')" },
+  check:  { label: "评审 Checklist",  icon: "✅", mod: "asset", color: "#fa8c16", view: "sub-check", enter: "__jumpSub('asset','sub-check')" },
 };
 
 /** 搜索结果缓存（渲染搜索页时重建，详情弹窗按索引取用） */
@@ -60,10 +64,25 @@ function _searchHl(text, q) {
   }
 }
 
-/** 工具：受权限过滤的数据源是否可见 */
+/** 工具：受权限 + 搜索范围过滤的数据源是否可见
+ *  - 主系统门户（无 window.__SUB_KEY）：全部来源，仍受 canAccessModule 权限过滤
+ *  - 子系统窗口（dev / asset）：只允许本子系统的来源，
+ *    即研发公共搜「标准库 / 案例库」、过程资产搜「规范 / 模板 / 设计规范 / Checklist」；
+ *    其余子系统（proj / perf 等）无搜索框，不会进入搜索页 */
 function _searchSrcAllowed(srcKey) {
   const meta = SEARCH_SOURCES[srcKey];
-  return !!meta && canAccessModule(meta.mod);
+  if (!meta) return false;
+  if (!canAccessModule(meta.mod)) return false;
+  if (typeof window !== "undefined" && window.__SUB_KEY && meta.mod !== window.__SUB_KEY) return false;
+  return true;
+}
+
+/** 工具：当前搜索范围文案（主系统为全局；子系统为本子系统来源拼接） */
+function _searchScopeLabel() {
+  const sub = typeof window !== "undefined" ? window.__SUB_KEY || "" : "";
+  if (!sub) return "搜索范围：标准库 / 案例库 / 过程资产";
+  const labels = Object.keys(SEARCH_SOURCES).filter((k) => SEARCH_SOURCES[k].mod === sub).map((k) => SEARCH_SOURCES[k].label);
+  return "搜索范围：本子系统 · " + (labels.join(" / ") || "无");
 }
 
 /* ---------- 搜索：收集全部命中结果 ---------- */
@@ -168,7 +187,7 @@ function renderSearchPage() {
 
   let body;
   if (list.length === 0) {
-    body = `<div class="empty" style="margin-top:32px">🔍 未找到与「${_escape(q)}」相关的${__searchSrc ? SEARCH_SOURCES[__searchSrc].label : "内容"}<br><br><span class="muted small">搜索范围：标准库 / 案例库 / 过程资产</span></div>`;
+    body = `<div class="empty" style="margin-top:32px">🔍 未找到与「${_escape(q)}」相关的${__searchSrc ? SEARCH_SOURCES[__searchSrc].label : "内容"}<br><br><span class="muted small">${_searchScopeLabel()}</span></div>`;
   } else {
     body = `<div class="search-list">${list.map((r) => {
       const idx = all.indexOf(r);
@@ -260,31 +279,62 @@ function _searchDetailBody(r) {
     ${sec}`;
 }
 
-/* ========== 通知公告面板（工作台） ========== */
+/* ========== 首页左侧栏（v5：用户卡 + 常用应用 + 系统管理） ==========
+ * 仅主系统首页（VIEWS.home）使用，由 views.js renderHome 经 window 守卫调用。
+ * v5 起调整：crumb 公告条去掉发布人与发布时间；原主区「平台入口」卡片区下线
+ *（操作说明书入口移除），系统管理迁入侧栏（_portalSideSys，仅 sysAdmin）。
+ * 数据全部复用现有层（公告 getPublishedNotices / 常用应用 getFavApps），
+ * 零新增存储。
+ */
 
-function _portalNoticePanel() {
-  const notices = window.getPublishedNotices ? window.getPublishedNotices() : [];
-  const unread = window.countUnreadNotices ? window.countUnreadNotices() : 0;
-  const list = notices.slice(0, 4).map((n) => {
-    const readIds = window.getReadNoticeIds ? window.getReadNoticeIds() : [];
-    const isRead = readIds.indexOf(n.id) >= 0;
-    return `<div class="portal-notice" onclick="openNoticeDetail('${n.id}')">
-      <div class="portal-notice-dot" style="visibility:${isRead ? "hidden" : "visible"}"></div>
-      <div class="portal-notice-body">
-        <div class="portal-notice-title">${n.top ? '<span class="tag warn" style="margin-right:6px">置顶</span>' : ""}${_escape(n.title)}</div>
-        <div class="portal-notice-meta">${_escape(n.publisher || "")} · ${_fmtDate(n.createdAt)} · ${(window.NOTICE_TYPES || {})[n.type] || "通知"}</div>
+/** 侧栏 · 用户卡：头像 + 姓名/工号 + 角色（v6.6 起为纯展示，无点击）+ 问候语 + 日期 + 问候语文案 */
+function _portalSideUser() {
+  const name = window.CURR_ACCT_NAME || "";
+  const acct = window.CURR_ACCT || "";
+  const roleKey = window.CURR_ACCT_ROLE_KEY || CUR_ROLE || "";
+  const roleName = (typeof ROLES !== "undefined" && ROLES[roleKey] && ROLES[roleKey].name) || roleKey;
+  const d = new Date();
+  const dateStr = `${d.getMonth() + 1}月${d.getDate()}日 周${"日一二三四五六".charAt(d.getDay())}`;
+  return `<div class="portal-side-user">
+      <div class="portal-side-avatar">${_escape((name || "👤").charAt(0))}</div>
+      <div class="portal-side-user-info">
+        <div class="portal-side-user-name">${_escape(name) || "同学"}</div>
+        <div class="portal-side-user-meta">${_escape(acct)}${roleName ? " · " + _escape(roleName) : ""}</div>
       </div>
-      <div class="portal-notice-arrow">›</div>
-    </div>`;
-  }).join("");
-  const emptyHtml = notices.length === 0
-    ? '<div class="portal-panel-empty">📭 暂无通知公告</div>'
-    : "";
-  return `<div class="portal-panel">
-    <div class="portal-panel-head">
-      <span class="portal-panel-title">📢 通知公告${unread > 0 ? `<span class="portal-panel-badge">${unread} 条未读</span>` : ""}</span>
     </div>
-    <div class="portal-panel-body">${list || emptyHtml}</div>
+    <div class="portal-side-hello">
+      <div class="portal-side-greeting">${_greeting()}，${_escape(name) || "同学"} 👋</div>
+      <div class="portal-side-motto">${NAV.portalHelloSub}</div>
+      <div class="portal-side-date">${dateStr}</div>
+      <div class="portal-side-dateprog">${_dateProgressHtml()}</div>
+    </div>`;
+}
+
+/** 用户卡日期进度小字（v5.2）：本周第 N 天 · 今年第 N 天 · 距月末 N 天（纯计算，无数据依赖） */
+function _dateProgressHtml() {
+  const now = new Date();
+  const wd = now.getDay() || 7;
+  const yd = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 1;
+  const left = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+  return NAV.sideDateProgress.replace("{wd}", wd).replace("{yd}", yd).replace("{left}", left);
+}
+
+/** crumb 公告条（v5.1：首页面包屑行只保留公告，去掉发布人与发布时间；
+ *  v5.9：去掉「查看更多」，只展示最新一条，点击标题看详情）
+ * 由 router.js renderCrumb 首页分支调用（window 守卫）；无公告时返回空串。
+ * 点击标题打开详情并标记已读。 */
+function _crumbNoticeHtml() {
+  const notices = window.getPublishedNotices ? window.getPublishedNotices() : [];
+  if (!notices.length) return "";
+  const n = notices[0];
+  const readIds = window.getReadNoticeIds ? window.getReadNoticeIds() : [];
+  const isRead = readIds.indexOf(n.id) >= 0;
+  return `<div class="crumb-notice">
+    <span class="crumb-notice-main">
+      <span class="crumb-notice-dot" style="visibility:${isRead ? "hidden" : "visible"}"></span>
+      <span class="crumb-notice-tag">📢 公告</span>
+      <span class="crumb-notice-title" onclick="openNoticeDetail('${n.id}')" title="${_escape(n.title)}">${n.top ? '<span class="tag warn" style="margin-right:6px">置顶</span>' : ""}${_escape(n.title)}</span>
+    </span>
   </div>`;
 }
 
@@ -301,28 +351,38 @@ function openNoticeDetail(id) {
     </div>
     <div class="md-preview">${_renderMd(n.content)}</div>`;
   openModal(modalContent(`${n.top ? "📌 " : "📢"}${_escape(n.title)}`, body, btn("关闭", "gray", "closeModal()")), "640px");
-  // 刷新工作台面板的未读状态（若当前在工作台）
-  if ((window.curModule || "home") === "home" && typeof window.renderCurView === "function") {
-    window.renderCurView();
+  // 刷新工作台与 crumb 公告条的未读状态（若当前在主系统首页）
+  if ((window.curModule || "home") === "home") {
+    if (typeof window.renderCurView === "function") window.renderCurView();
+    if (typeof renderCrumb === "function") renderCrumb();
   }
 }
 
-/* ========== 我的常用应用（工作台） ========== */
+/* ========== 我的常用应用（首页左侧栏紧凑磁贴） ==========
+ * 数据结构（批次三起两级化）：{ app, mod, sub }
+ *   app = 所属子系统（门户卡 key；非子系统的旧菜单项为 ""）
+ *   mod/sub = 页面在菜单树中的位置；外部系统卡 mod/sub 均为 ""
+ * 旧数据 { mod, sub } 自动迁移：内部子系统按 mod 反查补 app，
+ *   已迁出板块的旧外链项（pms/board/sub-auto）按迁移表转到新门户卡。
+ */
 
 const FAV_KEY_PREFIX = "oa_fav_apps::";
 const FAV_DEFAULT_COUNT = 4;
+/** 旧外链子系统 key → 新门户卡 key（批次二外部系统迁出板块） */
+const FAV_LEGACY_EXT = { pms: "ext-pms", board: "ext-board", "sub-auto": "ext-auto" };
 
 function _favKey() {
   return FAV_KEY_PREFIX + (window.CURR_ACCT || "guest");
 }
 
-/** 全部可选子系统（当前角色可见，按板块顺序） */
+/** 全部可选应用（当前角色可见：内部子系统页面 + 外链门户卡，按板块顺序） */
 function _favCandidates() {
   const out = [];
   Object.keys(MODULES).forEach((mk) => {
     if (mk === "home") return;
     if (!canAccessModule(mk)) return;
     _visibleSubs(mk).forEach((s) => out.push({
+      app: (typeof _isSubsystemKey === "function" && _isSubsystemKey(mk)) ? mk : "",
       mod: mk,
       sub: s.key,
       name: s.name,
@@ -332,10 +392,39 @@ function _favCandidates() {
       url: s.url || "",
     }));
   });
+  /* 外链门户卡（批次二起外部系统迁出板块，作为整体固定到常用应用） */
+  if (typeof getPortalApps === "function") {
+    getPortalApps().filter((a) => a.kind === "external").forEach((a) => {
+      if (typeof _portalAppAllowed === "function" && !_portalAppAllowed(a)) return;
+      out.push({
+        app: a.key, mod: "", sub: "",
+        name: a.name, icon: a.icon || "🔗",
+        modName: "外部系统", type: "external", url: a.url || "",
+      });
+    });
+  }
   return out;
 }
 
-/** 读取常用应用（无记录则默认取前 N 个可见子系统） */
+/** 旧 fav 项结构迁移：补 app 字段；命中的旧外链项转为新门户卡 {app, "", ""} */
+function _favMigrateItem(f, cands) {
+  if (!f || typeof f !== "object") return null;
+  if (f.app !== undefined && f.mod !== undefined && f.sub !== undefined) {
+    return { app: f.app, mod: f.mod, sub: f.sub };
+  }
+  if (f.mod && f.sub) {
+    const live = cands.some((c) => c.mod === f.mod && c.sub === f.sub);
+    if (!live && FAV_LEGACY_EXT[f.sub] && typeof findPortalApp === "function" && findPortalApp(FAV_LEGACY_EXT[f.sub])) {
+      return { app: FAV_LEGACY_EXT[f.sub], mod: "", sub: "" };
+    }
+    if (typeof _isSubsystemKey === "function" && _isSubsystemKey(f.mod)) {
+      return { app: f.mod, mod: f.mod, sub: f.sub };
+    }
+  }
+  return { app: "", mod: f.mod || "", sub: f.sub || "" };
+}
+
+/** 读取常用应用（无记录则默认取前 N 个可见应用；旧结构自动迁移） */
 function getFavApps() {
   let list = [];
   try {
@@ -343,11 +432,13 @@ function getFavApps() {
     if (raw) list = JSON.parse(raw) || [];
   } catch (e) { list = []; }
   if (!Array.isArray(list)) list = [];
-  /* 过滤失效项（权限变更 / 菜单删除） */
   const cands = _favCandidates();
-  list = list.filter((f) => cands.some((c) => c.mod === f.mod && c.sub === f.sub));
+  /* 结构迁移 {mod,sub} → {app,mod,sub}，并过滤失效项（权限变更 / 菜单删除 / 门户卡下架） */
+  list = list
+    .map((f) => _favMigrateItem(f, cands))
+    .filter((f) => f && cands.some((c) => c.app === f.app && c.mod === f.mod && c.sub === f.sub));
   if (list.length === 0) {
-    list = cands.slice(0, FAV_DEFAULT_COUNT).map((c) => ({ mod: c.mod, sub: c.sub }));
+    list = cands.slice(0, FAV_DEFAULT_COUNT).map((c) => ({ app: c.app, mod: c.mod, sub: c.sub }));
   }
   return list;
 }
@@ -356,48 +447,66 @@ function saveFavApps(list) {
   try { localStorage.setItem(_favKey(), JSON.stringify(list)); } catch (e) {}
 }
 
-/** 直接进入某个常用子系统 */
-function openFavApp(modKey, subKey) {
-  if (!canAccessModule(modKey)) {
-    window.toast(TOAST.noPermAccess.replace("{role}", ROLES[CUR_ROLE].name).replace("{module}", MODULES[modKey] ? MODULES[modKey].name : modKey));
+/** 直接进入某个常用应用
+ *  新签名 openFavApp(app, mod, sub)；兼容旧两参调用 openFavApp(mod, sub) */
+function openFavApp(app, mod, sub) {
+  if (sub === undefined) {
+    sub = mod;
+    mod = app;
+    app = (typeof _isSubsystemKey === "function" && _isSubsystemKey(mod)) ? mod : "";
+  }
+  if (!mod) {
+    /* 外链门户卡：新窗口打开 */
+    const card = typeof findPortalApp === "function" ? findPortalApp(app) : null;
+    if (card && card.url) { window.open(card.url, "_blank"); return; }
+    window.toast("该外部系统地址无效或已下架");
     return;
   }
-  const sub = findMenuNode(modKey, subKey);
-  if (!sub || !hasRole(modKey, subKey)) {
+  if (!canAccessModule(mod)) {
+    window.toast(TOAST.noPermAccess.replace("{role}", ROLES[CUR_ROLE].name).replace("{module}", MODULES[mod] ? MODULES[mod].name : mod));
+    return;
+  }
+  const subNode = findMenuNode(mod, sub);
+  if (!subNode || !hasRole(mod, sub)) {
     window.toast("该子系统不存在或已无访问权限");
     return;
   }
-  if (sub.type === "external" && sub.url) {
-    window.open(sub.url, "_blank");
+  if (subNode.type === "external" && subNode.url) {
+    window.open(subNode.url, "_blank");
     return;
   }
-  curModule = modKey;
-  curView = subKey;
-  curSubSub = "";
-  __routeQuery = null;
-  __searchQuery = "";
-  __searchSrc = "";
-  if (typeof syncViewState === "function") syncViewState();
-  if (typeof saveRoute === "function") saveRoute();
-  if (typeof renderCurrent === "function") renderCurrent();
+  /* v2 窗口级分离：内部子系统一律新窗口打开，并落到指定二级页（?m=sub） */
+  if (typeof __jumpSub === "function") {
+    __jumpSub(mod, sub);
+  } else if (typeof openSubsystem === "function") {
+    openSubsystem(mod, sub);
+  }
 }
 
-/** 常用应用管理弹窗（勾选增删） */
+/** 常用应用管理弹窗（勾选增删；内部页面按板块分组，外链门户卡独立分组） */
 function openFavManage() {
   const cands = _favCandidates();
   const fav = getFavApps();
   const favSet = {};
-  fav.forEach((f) => { favSet[f.mod + "::" + f.sub] = true; });
+  fav.forEach((f) => { favSet[f.app + "::" + f.mod + "::" + f.sub] = true; });
   const groups = Object.keys(MODULES).filter((mk) => mk !== "home" && canAccessModule(mk)).map((mk) => {
     const items = cands.filter((c) => c.mod === mk).map((c) => {
-      const key = c.mod + "::" + c.sub;
+      const key = c.app + "::" + c.mod + "::" + c.sub;
       const extBadge = c.type === "external" ? '<span class="tag ext">外链</span>' : "";
       return `<label class="fav-manage-item"><input type="checkbox" class="fav-cb" value="${key}" ${favSet[key] ? "checked" : ""}> <span class="fav-manage-icon">${c.icon}</span>${_escape(c.name)}${extBadge}</label>`;
     }).join("");
     return items ? `<div class="fav-manage-group"><div class="fav-manage-group-title">${_escape(MODULES[mk].name)}</div><div class="fav-manage-items">${items}</div></div>` : "";
+  });
+  /* 外链门户卡分组（mod 为空即门户级外部系统） */
+  const extItems = cands.filter((c) => !c.mod).map((c) => {
+    const key = c.app + "::" + c.mod + "::" + c.sub;
+    return `<label class="fav-manage-item"><input type="checkbox" class="fav-cb" value="${key}" ${favSet[key] ? "checked" : ""}> <span class="fav-manage-icon">${c.icon}</span>${_escape(c.name)}<span class="tag ext">外链</span></label>`;
   }).join("");
-  const body = `<div style="font-size:13px;color:var(--sub);margin-bottom:12px">勾选需要固定在「我的常用应用」的子系统（最多 8 个）</div>
-    <div id="favManageList" style="max-height:52vh;overflow-y:auto">${groups || '<div class="empty">暂无可选子系统</div>'}</div>`;
+  if (extItems) {
+    groups.push(`<div class="fav-manage-group"><div class="fav-manage-group-title">外部系统</div><div class="fav-manage-items">${extItems}</div></div>`);
+  }
+  const body = `<div style="font-size:13px;color:var(--sub);margin-bottom:12px">勾选需要固定在「我的常用应用」的子系统页面或外部系统（最多 8 个）</div>
+    <div id="favManageList" style="max-height:52vh;overflow-y:auto">${groups.join("") || '<div class="empty">暂无可选应用</div>'}</div>`;
   const foot = `${btn("取消", "gray", "closeModal()")} ${btn("💾 保存", "", "saveFavFromModal()")}`;
   openModal(modalContent("🧭 管理我的常用应用", body, foot), "560px");
 }
@@ -406,8 +515,8 @@ function saveFavFromModal() {
   const cbs = document.querySelectorAll("#favManageList .fav-cb:checked");
   const list = [];
   cbs.forEach((cb) => {
-    const [mod, sub] = cb.value.split("::");
-    list.push({ mod: mod, sub: sub });
+    const parts = String(cb.value).split("::");
+    list.push({ app: parts[0] || "", mod: parts[1] || "", sub: parts[2] || "" });
   });
   if (list.length > 8) {
     window.toast("最多只能选择 8 个常用应用");
@@ -421,27 +530,111 @@ function saveFavFromModal() {
   }
 }
 
-/** 工作台「我的常用应用」分区 */
-function _portalFavSection() {
+/** 侧栏 · 常用应用：3 列紧凑磁贴（外链卡带 ↗ 标记；管理复用常用应用管理弹窗） */
+function _portalSideFav() {
   const fav = getFavApps();
+  const cands = _favCandidates();
   const tiles = fav.map((f) => {
-    const c = _favCandidates().find((x) => x.mod === f.mod && x.sub === f.sub);
+    const c = cands.find((x) => x.app === f.app && x.mod === f.mod && x.sub === f.sub);
     if (!c) return "";
     const color = (typeof MODULE_THEME !== "undefined" && MODULE_THEME[f.mod]) || "#1677ff";
     const isExt = c.type === "external" && c.url;
-    const badge = isExt ? '<span class="tag ext">外链</span>' : "";
-    return `<div class="portal-tile portal-fav-tile" style="--tc:${color}" onclick="openFavApp('${f.mod}','${f.sub}')">
-      <div class="portal-tile-head">
-        <div class="portal-tile-icon" style="background:${color}1a;color:${color}">${c.icon}</div>
-        <div class="portal-tile-name">${_escape(c.name)}</div>
-      </div>
-      <div class="portal-tile-meta">${_escape(c.modName)}${badge}</div>
+    return `<div class="portal-side-fav" onclick="openFavApp('${f.app}','${f.mod}','${f.sub}')" title="${_escape(c.name)}${isExt ? "（外部系统，新窗口打开）" : ""}">
+      <div class="portal-side-fav-icon" style="background:${color}1a;color:${color}">${c.icon}</div>
+      <div class="portal-side-fav-name">${_escape(c.name)}${isExt ? '<span class="portal-side-fav-ext">↗</span>' : ""}</div>
     </div>`;
   }).join("");
-  // 列数钳制在 6~8：不足 6 个也至少 6 列，最多 8 个一行（空态兜底 1 列）
-  const favCols = Math.max(6, Math.min(Math.max(fav.length, 1), 8));
-  return `<div class="portal-section-title">🧭 我的常用应用<span class="portal-section-sub">（按需固定，最多 8 个）</span><span class="portal-section-act" onclick="openFavManage()">⚙ 管理</span></div>
-  <div class="portal-grid portal-grid-fav" style="--cols:${favCols}">${tiles || '<div class="empty" style="grid-column:1/-1">暂无常用应用，点击「⚙ 管理」添加</div>'}</div>`;
+  return `<div class="portal-side-block">
+    <div class="portal-side-head">
+      <span class="portal-side-title">${NAV.sideFav}</span>
+      <span class="portal-side-act" onclick="openFavManage()">${NAV.sideFavManage}</span>
+    </div>
+    <div class="portal-side-fav-grid">${tiles || `<div class="portal-side-empty" style="grid-column:1/-1">${NAV.sideFavEmpty}</div>`}</div>
+  </div>`;
+}
+
+/** 侧栏 · 系统管理入口（v5：原主区平台入口卡迁入侧栏，仅 sysAdmin 可见）
+ * 权限门与 selectModule('sys') 同源（CUR_ROLE，登录时由账号 key 决定）
+ * 点击进入系统管理板块（仍在主系统窗口内） */
+function _portalSideSys() {
+  const isAdmin = typeof CUR_ROLE !== "undefined" && CUR_ROLE === "sysAdmin";
+  if (!isAdmin) return "";
+  return `<div class="portal-side-link" onclick="selectModule('sys')" title="进入系统管理">${NAV.sideSys}<span class="portal-side-tag">${NAV.sideAdminTag}</span></div>`;
+}
+
+/* ---------- 侧栏 · 待办摘要行（v5.2） ----------
+ * 紧凑摘要形态（非 v4 已下线的待办完整列表）：复用 _collectTodos() 的跨模块
+ * 待办聚合（按角色），点击弹铃铛待办面板（showLoginTodoModal(true)）。
+ * 0 条时展示置灰兜底文案，不绑点击（面板本身对空列表不弹窗）。 */
+function _portalSideTd() {
+  const todos = typeof _collectTodos === "function" ? _collectTodos() : [];
+  const count = todos.length;
+  if (count > 0) {
+    return `<div class="portal-side-td" onclick="showLoginTodoModal(true)" title="点击查看全部待办">
+      <span class="portal-side-td-label">${NAV.sideTd}</span>
+      <span class="portal-side-td-num">${count} ${NAV.sideTdUnit}</span>
+      <span class="portal-side-td-go">›</span>
+    </div>`;
+  }
+  return `<div class="portal-side-td zero" title="当前没有待处理事项">
+    <span class="portal-side-td-label">${NAV.sideTd}</span>
+    <span class="portal-side-td-none">${NAV.sideTdNone}</span>
+  </div>`;
+}
+
+/* ---------- 侧栏 · 最近访问（v5.2） ----------
+ * 自动记录最近进入的内部子系统二级页（router.js 的 selectSub/selectSubSub/go
+ * 挂钩 recordRecentVisit），按账号隔离（oa_recent::<账号>），最多保留 8 条，
+ * 侧栏展示最近 5 条；点击与常用应用一致——新窗口打开子系统并落地该页。 */
+
+/** 最近访问存储 key（按当前账号隔离；未登录回落 guest） */
+function _recentKey() {
+  const id = window.CURR_ACCT_ID || window.CURR_ACCT_NAME || "";
+  return "oa_recent::" + (id || "guest");
+}
+
+/** 读取最近访问列表（容错解析，过滤脏数据） */
+function getRecentVisits() {
+  try {
+    const raw = localStorage.getItem(_recentKey());
+    if (raw) {
+      const v = JSON.parse(raw);
+      if (Array.isArray(v)) return v.filter((x) => x && x.mod && x.sub);
+    }
+  } catch (e) {}
+  return [];
+}
+
+/** 记录一次子系统访问：去重后置顶，截断到 RECENT_MAX 条
+ * 仅记内部子系统（门户 kind=internal 的 mod）；home/sys/外链不记录 */
+const RECENT_MAX = 8;
+function recordRecentVisit(modKey, subKey) {
+  if (!modKey || !subKey) return;
+  if (modKey === "home" || modKey === "sys") return;
+  if (typeof _isSubsystemKey === "function" && !_isSubsystemKey(modKey)) return;
+  const node = typeof findMenuNode === "function" ? findMenuNode(modKey, subKey) : null;
+  if (!node || node.type === "external") return;
+  try {
+    const list = getRecentVisits().filter((x) => !(x.mod === modKey && x.sub === subKey));
+    list.unshift({ mod: modKey, sub: subKey, name: node.name || subKey, icon: node.icon || "📄", ts: Date.now() });
+    _save(_recentKey(), list.slice(0, RECENT_MAX));
+  } catch (e) {}
+}
+
+/** 侧栏 · 最近访问：最近 5 条内部子系统二级页（图标 + 名称 + 跳转箭头） */
+function _portalSideRecent() {
+  const list = getRecentVisits().slice(0, 5);
+  const rows = list.map((r) => `<div class="portal-side-recent-row" onclick="__jumpSub('${r.mod}','${r.sub}')" title="打开${_escape(r.name)}">
+    <span class="portal-side-recent-icon">${r.icon || "📄"}</span>
+    <span class="portal-side-recent-name">${_escape(r.name)}</span>
+    <span class="portal-side-recent-go">›</span>
+  </div>`).join("");
+  return `<div class="portal-side-block">
+    <div class="portal-side-head">
+      <span class="portal-side-title">${NAV.sideRecent}</span>
+    </div>
+    ${rows || `<div class="portal-side-empty">${NAV.sideRecentEmpty}</div>`}
+  </div>`;
 }
 
 /* ---------- 挂载到 window（供 HTML 内联 onclick 调用） ---------- */
@@ -456,3 +649,9 @@ window.openFavManage = openFavManage;
 window.saveFavFromModal = saveFavFromModal;
 window.getFavApps = getFavApps;
 window.saveFavApps = saveFavApps;
+window._crumbNoticeHtml = _crumbNoticeHtml;
+window._portalSideSys = _portalSideSys;
+window._portalSideTd = _portalSideTd;
+window._portalSideRecent = _portalSideRecent;
+window.getRecentVisits = getRecentVisits;
+window.recordRecentVisit = recordRecentVisit;

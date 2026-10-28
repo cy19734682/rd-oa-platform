@@ -1,18 +1,25 @@
-﻿/* ========== 路由导航（OA 门户模型） ==========
- * 门户三级：工作台（平台首页）→ 板块首页（子系统磁贴）→ 子系统页
- *   curModule: "home" 表示工作台；否则为板块模块 key
- *   curView:   "" 表示板块首页（子系统磁贴一次性铺开）；否则为子系统 key
- *   curSubSub: 三级子系统 key（菜单管理可配），非空表示当前渲染三级子系统页
- * 导航入口全部走磁贴点击，无顶部一级菜单、无左侧边栏。
+﻿/* ========== 路由导航（v2 主系统 + 子系统窗口级分离） ==========
+ * 窗口两级：
+ *   主系统窗口（index.html）：门户（VIEWS.home）→ 系统管理等主系统内模块
+ *   子系统窗口（subs/<key>.html）：只承载该子系统自己的模块树
+ *     curModule: 子系统窗口恒等于 window.__SUB_KEY；主系统为 "home" 或 sys
+ *     curView:   "" 表示子系统首页（二级磁贴一次性铺开）；否则为二级 key
+ *     curSubSub: 三级子系统 key（菜单管理可配），非空表示当前渲染三级子系统页
+ * 路由持久化按窗口隔离：主系统 oa_route；子系统窗口 oa_route::<app>
+ * 进入子系统一律 window.open 新窗口（openSubsystem），壳内切换已废弃。
  */
 
-/* ---------- 路由持久化 key ---------- */
-const ROUTE_KEY = "oa_route";
+/* ---------- 路由持久化 key（按窗口隔离） ---------- */
+function _routeKey() {
+  return (typeof window !== "undefined" && window.__SUB_KEY) ? "oa_route::" + window.__SUB_KEY : "oa_route";
+}
 
 /* ---------- 当前模块/视图状态 ---------- */
 let curModule = "home";
 let curView = "";
 let curSubSub = "";
+/* ---------- 当前子系统 key（主系统+子系统模型；空 = 主系统门户） ---------- */
+let curApp = "";
 let __routeQuery = null;
 /* ---------- 全局搜索状态（非空表示当前处于独立搜索页） ---------- */
 let __searchQuery = "";
@@ -35,10 +42,18 @@ function _visibleChildren(modKey, subKey) {
     .filter((ss) => hasRole(modKey, subKey, ss.key));
 }
 
-/* ---------- 持久化当前路由到 sessionStorage ---------- */
+/* ---------- 辅助：某 key 是否为「内部子系统」（门户 kind=internal 的 mod） ----------
+ * 系统管理（sys）与工作台（home）不属于子系统，留在主系统内 */
+function _isSubsystemKey(k) {
+  if (!k || k === "home" || k === "sys" || !MODULES[k]) return false;
+  const apps = typeof getPortalApps === "function" ? getPortalApps() : [];
+  return apps.some((a) => a && a.kind === "internal" && a.mod === k);
+}
+
+/* ---------- 持久化当前路由到 sessionStorage（按窗口隔离） ---------- */
 function saveRoute() {
   try {
-    sessionStorage.setItem(ROUTE_KEY, JSON.stringify({ m: curModule, v: curView, ss: curSubSub, s: __searchQuery }));
+    sessionStorage.setItem(_routeKey(), JSON.stringify({ app: curApp, m: curModule, v: curView, ss: curSubSub, s: __searchQuery }));
   } catch (e) {
     // 忽略存储异常
   }
@@ -47,7 +62,7 @@ function saveRoute() {
 /* ---------- 清除持久化的路由状态 ---------- */
 function clearRoute() {
   try {
-    sessionStorage.removeItem(ROUTE_KEY);
+    sessionStorage.removeItem(_routeKey());
   } catch (e) {
     // 忽略
   }
@@ -64,38 +79,65 @@ function getFirstAccessibleModule() {
 }
 
 /* ---------- 渲染面包屑（可点击跳转）+ 右上角返回条 ----------
- * 工作台：      <b>工作台</b>
- * 板块首页：    工作台 / <b>研发公共</b>
- * 子系统页：    工作台 / 研发公共 / <b>标准库</b>   + 「← 返回研发公共」
- * 三级子系统页：工作台 / 研发公共 / 考核表 / <b>月度考核</b>
- * 搜索页：      工作台 / <b>搜索结果</b>「关键词」
+ * 主系统门户：      crumb 公告条（最新一条通知，v5 起不再显示「主系统」一级）
+ * 主系统内页面：    主系统 / <b>系统管理</b>            + 「← 返回主系统」
+ * 子系统窗口首页：  <b>项目管理</b>（v5.5 起不显示「主系统」一级，与主系统同构）
+ * 子系统窗口页：    研发公共 / <b>标准库</b>            （无返回条，回门户走顶栏 Logo）
+ * 三级子系统页：    研发公共 / 考核表 / <b>月度考核</b>  + 「← 返回考核表」
+ * 搜索页：          主系统 / <b>搜索结果</b>「关键词」
+ * 注：子系统窗口中一级为当前子系统名（点击回本子系统首页），回主门户统一走
+ *     顶栏 Logo（与主系统「点 Logo 回门户」行为一致）；
+ *     公告条仅在主系统首页渲染（_crumbNoticeHtml 定义在 views-portal.js，
+ *     经 window 守卫调用；子系统窗口不展示；无公告时首页 crumb 为空）。
  */
 function renderCrumb() {
   const el = document.getElementById("crumb");
   if (!el) return;
   const sep = '<span class="crumb-sep">/</span>';
+  const inSub = !!(typeof window !== "undefined" && window.__SUB_KEY);
+  /* v5.9：首页 crumb 用 is-home 标记——首页公告条左右内边距 290px（与首页主区列对齐），
+   * 其余页面面包屑仍为常规 20px。
+   * v6.6：搜索结果页不是首页——__searchQuery 非空时不打 is-home，
+   *       否则搜索页（curModule 仍停在 home）会误用首页的 290px 内边距。 */
+  const onHome = !__searchQuery && (curModule === "home" || !curModule);
+  el.className = "crumb" + (onHome ? " is-home" : "");
 
-  /* 独立搜索页：面包屑与模块解耦，逐级均可回到工作台 */
+  /* 独立搜索页：面包屑与模块解耦，逐级均可回到来源页
+   * v5.5：子系统窗口一级为本子系统名（与 crumb 规范一致，不出现「主系统」） */
   if (__searchQuery) {
-    el.innerHTML = `<div class="crumb-links"><span class="crumb-link" onclick="exitSearch()">工作台</span>${sep}<b>搜索结果</b><span class="crumb-q">「${_escape(__searchQuery)}」</span></div>`;
+    const rootLink = inSub && curModule && MODULES[curModule]
+      ? `<span class="crumb-link" onclick="exitSearch()">${_escape(MODULES[curModule].name)}</span>`
+      : `<span class="crumb-link" onclick="exitSearch()">${NAV.crumbPortal}</span>`;
+    el.innerHTML = `<div class="crumb-links">${rootLink}${sep}<b>搜索结果</b><span class="crumb-q">「${_escape(__searchQuery)}」</span></div>`;
     return;
   }
 
   const nodes = [];
 
-  if (curModule === "home") {
-    el.innerHTML = `<div class="crumb-links">${NAV.crumbHome}</div>`;
+  if (curModule === "home" || !curModule) {
+    /* v5：主系统首页 crumb 去掉「主系统」一级，只保留最新一条公告
+     * （子系统窗口不展示，公告属主系统；无公告时 crumb 为空） */
+    const notice = (!inSub && window._crumbNoticeHtml) ? _crumbNoticeHtml() : "";
+    el.innerHTML = notice;
     return;
   }
 
   const m = MODULES[curModule];
-  nodes.push('<span class="crumb-link" onclick="goHome()">工作台</span>');
-
   const sub = curView ? findMenuNode(curModule, curView) : null;
   const onSubPage = !!sub;
 
+  /* v6.2：子系统窗口在首页时不再渲染「本系统 / 本系统」重复两级——
+   * 有下级才把本系统名作为可点击一级，否则只由下面 else 分支输出一个纯文本节点 */
+  if (inSub) {
+    if (onSubPage) nodes.push(`<span class="crumb-link" onclick="selectModule('${curModule}')">${_escape(m.name)}</span>`);
+  } else {
+    nodes.push(`<span class="crumb-link" onclick="goHome()">${NAV.crumbPortal}</span>`);
+  }
+
   if (onSubPage) {
-    nodes.push(`<span class="crumb-link" onclick="selectModule('${curModule}')">${_escape(m.name)}</span>`);
+    if (!inSub) {
+      nodes.push(`<span class="crumb-link" onclick="selectModule('${curModule}')">${_escape(m.name)}</span>`);
+    }
     if (curSubSub) {
       const ss = (sub.subs || []).find((x) => x.key === curSubSub);
       nodes.push(`<span class="crumb-link" onclick="selectSub('${curView}')">${_escape(sub.name)}</span>`);
@@ -107,10 +149,11 @@ function renderCrumb() {
     nodes.push(`<b>${_escape(m.name)}</b>`);
   }
 
-  // 返回条：三级子系统页回到父级分组页（如「年度绩效管理」），二级子系统页回到板块首页
+  // 返回条：仅三级子系统页显示「← 返回父级分组」；子系统二级页回门户走顶栏 Logo
+  // （与主系统无壳行为对齐），主系统二级页仍显示「← 返回主系统」
   const backHtml = !onSubPage ? "" : (curSubSub
     ? `<div class="crumb-back"><button class="btn gray sm" onclick="selectSub('${curView}')">${NAV.backToGroup.replace('{group}', _escape(sub.name))}</button></div>`
-    : `<div class="crumb-back"><button class="btn gray sm" onclick="selectModule('${curModule}')">${NAV.backToModule.replace('{module}', _escape(m.name))}</button></div>`);
+    : (inSub ? "" : `<div class="crumb-back"><button class="btn gray sm" onclick="goHome()">${NAV.backToPortal}</button></div>`));
   el.innerHTML = `<div class="crumb-links">${nodes.join(sep)}</div>${backHtml}`;
 }
 
@@ -176,8 +219,14 @@ function renderModulePage() {
   renderCrumb();
 }
 
-/* ---------- 工作台（平台首页） ---------- */
+/* ---------- 主系统门户（平台首页 = 各子系统入口） ----------
+ * 上下文感知：子系统窗口中 goHome 表示回到该子系统首页（不再是门户） */
 function goHome() {
+  if (typeof window !== "undefined" && window.__SUB_KEY) {
+    selectModule(window.__SUB_KEY);
+    return;
+  }
+  curApp = "";
   curModule = "home";
   curView = "";
   curSubSub = "";
@@ -192,8 +241,49 @@ function goHome() {
   renderCrumb();
 }
 
+/* ---------- 新窗口打开子系统（门户内部卡 / 常用应用 / 搜索进入等统一入口） ----------
+ * 校验门户卡存在性与模块权限后 window.open 独立页面；外部卡直接打开外链 */
+function openSubsystem(appKey, viewKey) {
+  const app = typeof findPortalApp === "function" ? findPortalApp(appKey) : null;
+  if (app && app.kind === "external") {
+    if (app.url) window.open(app.url, "_blank");
+    return;
+  }
+  const modKey = app ? app.mod : appKey;
+  if (!modKey || !MODULES[modKey]) return;
+  if (!canAccessModule(modKey)) {
+    window.toast(TOAST.noPermAccess.replace('{role}', ROLES[CUR_ROLE].name).replace('{module}', MODULES[modKey].name));
+    return;
+  }
+  const q = viewKey ? "?m=" + encodeURIComponent(viewKey) : "";
+  window.open("subs/" + modKey + ".html" + q, "_blank");
+}
+
+/* ---------- 返回主系统门户 ----------
+ * 子系统窗口：opener 存活则聚焦原门户标签，否则新开主门户；
+ * 主系统窗口：等价于 goHome() */
+function backToPortal() {
+  if (typeof window !== "undefined" && window.__SUB_KEY) {
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.focus();
+        return;
+      }
+    } catch (e) {
+      // 跨窗口访问被拒时走新开标签兜底
+    }
+    window.open("../index.html", "_blank");
+    return;
+  }
+  goHome();
+}
+
 /* ---------- 选择一级板块（进入板块首页，铺开子系统磁贴） ---------- */
 function selectModule(k) {
+  /* 子系统窗口只允许停留在自己的模块树内 */
+  if (typeof window !== "undefined" && window.__SUB_KEY && k !== window.__SUB_KEY) {
+    k = window.__SUB_KEY;
+  }
   if (k === "home" || !MODULES[k]) {
     goHome();
     return;
@@ -210,6 +300,8 @@ function selectModule(k) {
   curModule = k;
   curView = "";
   curSubSub = "";
+  /* 子系统窗口中 curApp 恒为当前子系统 key（供面包屑/持久化使用） */
+  curApp = (typeof window !== "undefined" && window.__SUB_KEY) ? window.__SUB_KEY : "";
   __routeQuery = null;
   __searchQuery = "";
   __searchSrc = "";
@@ -238,6 +330,7 @@ function selectSub(v) {
   __searchSrc = "";
   syncViewState();
   saveRoute();
+  if (typeof recordRecentVisit === "function") recordRecentVisit(curModule, v);
   renderCurrent();
 }
 
@@ -258,6 +351,7 @@ function selectSubSub(subKey, subSubKey) {
   __searchSrc = "";
   syncViewState();
   saveRoute();
+  if (typeof recordRecentVisit === "function") recordRecentVisit(curModule, subKey);
   renderCurrent();
 }
 
@@ -299,26 +393,104 @@ function go(v, fromHome) {
   __searchSrc = "";
   syncViewState();
   saveRoute();
+  if (typeof recordRecentVisit === "function") recordRecentVisit(curModule, v);
   renderCurrent();
 }
 
-/* ---------- 恢复路由状态（带权限校验，无权限则降级到工作台） ---------- */
+/* ---------- 恢复路由状态（带权限校验，无权限则降级） ----------
+ * 主系统窗口：读 oa_route，支持 URL 查询参数 ?m=&v=（跨窗口深链落地）；
+ *    v1 遗留的壳态路由（app 非空）直接回门户——子系统已改为独立窗口。
+ * 子系统窗口：读 oa_route::<app>，只恢复本子系统内的深层路由。 */
 function restoreRoute() {
+  const inSub = !!(typeof window !== "undefined" && window.__SUB_KEY);
   let saved = null;
   try {
-    const raw = sessionStorage.getItem(ROUTE_KEY);
+    const raw = sessionStorage.getItem(_routeKey());
     if (raw) saved = JSON.parse(raw);
   } catch (e) {
     // 忽略
   }
+
+  if (inSub) {
+    const appKey = window.__SUB_KEY;
+    curApp = appKey;
+    curModule = appKey;
+    if (!saved || !saved.v) {
+      curView = "";
+      curSubSub = "";
+      syncViewState();
+      saveRoute();
+      renderModulePage();
+      return;
+    }
+    const sub = findMenuNode(curModule, saved.v);
+    if (!sub || !hasRole(curModule, saved.v)) {
+      curView = "";
+      curSubSub = "";
+      syncViewState();
+      saveRoute();
+      renderModulePage();
+      return;
+    }
+    curView = saved.v;
+    if (saved.ss) {
+      const ss = (sub.subs || []).find((x) => x.key === saved.ss);
+      curSubSub = ss && hasRole(curModule, saved.v, saved.ss) ? saved.ss : "";
+    } else {
+      curSubSub = "";
+    }
+    syncViewState();
+    saveRoute();
+    renderCurrent();
+    return;
+  }
+
+  /* 主系统窗口：URL 查询参数优先（?m=sys&v=sysAcct 等跨窗口深链） */
+  let qMod = "", qView = "";
+  try {
+    const qs = new URLSearchParams(window.location.search || "");
+    qMod = qs.get("m") || "";
+    qView = qs.get("v") || "";
+  } catch (e) {
+    // 忽略
+  }
+  if (qMod && MODULES[qMod] && canAccessModule(qMod)) {
+    curApp = "";
+    curModule = qMod;
+    const sub = qView ? findMenuNode(curModule, qView) : null;
+    if (qView && sub && hasRole(curModule, qView)) {
+      curView = qView;
+      curSubSub = "";
+    } else {
+      curView = "";
+      curSubSub = "";
+    }
+    __searchQuery = "";
+    __searchSrc = "";
+    syncViewState();
+    saveRoute();
+    document.getElementById("app").style.display = "flex";
+    document.getElementById("view-login").style.display = "none";
+    if (curView) renderCurrent(); else renderModulePage();
+    return;
+  }
+
+  /* v1 遗留：壳态路由（app 非空）→ 子系统已独立成窗口，主系统直接回门户 */
+  if (saved && saved.app) {
+    goHome();
+    return;
+  }
+
   if (!saved || !saved.m) {
     goHome();
     return;
   }
+
   /* 搜索页恢复优先于模块降级：刷新后应回到搜索结果页（模块仅作返回上下文） */
   if (saved.s) {
-    const mk = saved.m !== "home" && MODULES[saved.m] && canAccessModule(saved.m) ? saved.m : "home";
+    const mk = (saved.m !== "home" && MODULES[saved.m] && canAccessModule(saved.m)) ? saved.m : "home";
     curModule = mk;
+    curApp = "";
     __searchQuery = String(saved.s);
     __searchSrc = "";
     curView = "";
@@ -334,10 +506,12 @@ function restoreRoute() {
     }
     return;
   }
+
   if (saved.m === "home" || !MODULES[saved.m] || !canAccessModule(saved.m)) {
     goHome();
     return;
   }
+  curApp = "";
   curModule = saved.m;
   const sub = saved.v ? findMenuNode(curModule, saved.v) : null;
   if (!saved.v || !sub || !hasRole(curModule, saved.v)) {
@@ -374,7 +548,7 @@ function renderPlaceholder() {
       <div style="background:#f7f9fc;border:1px solid #e8eaec;border-radius:var(--radius);padding:12px 16px;color:#1890ff;word-break:break-all;font-size:13px;margin-bottom:20px">${curSub.url}</div>
       <div style="display:flex;gap:12px">
         <button class="btn" onclick="window.open('${curSub.url}', '_blank')">在新窗口打开 ${curSub.name} ↗</button>
-        <button class="btn gray" onclick="goHome()">返回工作台</button>
+        <button class="btn gray" onclick="goHome()">${NAV.backToPortal}</button>
       </div>
     </div>`;
   }
@@ -399,6 +573,30 @@ function refreshAfterPermChange() {
     if (typeof window.renderSearchPage === "function") window.renderSearchPage();
     return;
   }
+  /* 子系统窗口：当前子系统被收回权限 → 出门控页（无权访问） */
+  if (typeof window !== "undefined" && window.__SUB_KEY) {
+    if (!canAccessModule(window.__SUB_KEY)) {
+      if (typeof window.showSubGate === "function") window.showSubGate("noperm");
+      return;
+    }
+    if (curModule !== "home") {
+      const sub = curView ? findMenuNode(curModule, curView) : null;
+      if (curView && (!sub || !hasRole(curModule, curView))) {
+        curView = "";
+        curSubSub = "";
+        syncViewState();
+        renderModulePage();
+        return;
+      }
+      if (curSubSub && (!sub || !hasRole(curModule, curView, curSubSub))) {
+        curSubSub = "";
+        syncViewState();
+      }
+    }
+    renderCurView();
+    return;
+  }
+  /* 主系统窗口：模块被收回权限 → 回门户 */
   if (curModule !== "home" && !canAccessModule(curModule)) {
     goHome();
     return;
@@ -444,6 +642,7 @@ function syncViewState() {
   window.curModule = curModule;
   window.curView = curView;
   window.curSubSub = curSubSub;
+  window.curApp = curApp;
 }
 
 /* ---------- 挂载到 window ---------- */
@@ -453,6 +652,8 @@ window.selectSubSub = selectSubSub;
 window.selectActionSub = selectActionSub;
 window.go = go;
 window.goHome = goHome;
+window.openSubsystem = openSubsystem;
+window.backToPortal = backToPortal;
 window.renderCurView = renderCurView;
 window.restoreRoute = restoreRoute;
 window.clearRoute = clearRoute;

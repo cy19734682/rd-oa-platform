@@ -55,22 +55,6 @@ function _visibleSubCount(modKey) {
   return _visibleSubs(modKey).length;
 }
 
-/** 板块磁贴（工作台首页用）：竖排大卡片——头部（图标+名称+子系统计数）→ 描述 → 底部进入链接 */
-function _portalModuleTile(modKey, m) {
-  const color = (typeof MODULE_THEME !== "undefined" && MODULE_THEME[modKey]) || "#1677ff";
-  const n = _visibleSubCount(modKey);
-  const desc = (typeof MODULE_DESC !== "undefined" && MODULE_DESC[modKey]) || "";
-  return `<div class="portal-tile portal-module-tile" style="--tc:${color}" onclick="selectModule('${modKey}')">
-    <div class="portal-tile-head">
-      <div class="portal-tile-icon" style="background:${color}1a;color:${color}">${m.icon || "📦"}</div>
-      <div class="portal-tile-name">${_escape(m.name)}</div>
-      <div class="portal-tile-count">${n} 个子系统</div>
-    </div>
-    ${desc ? `<div class="portal-tile-desc">${_escape(desc)}</div>` : ""}
-    <div class="portal-tile-enter" style="color:${color}">进入板块 →</div>
-  </div>`;
-}
-
 /** 子系统磁贴（板块首页 / 三级分组页共用）
  *  @param {string} modKey    板块 key
  *  @param {Object} sub       子系统菜单节点
@@ -125,10 +109,11 @@ function _collectTodos() {
         const stage = t.status === "pending" ? "待自评" : t.status === "selfFilled" ? "待主管打分" : t.status === "supDone" ? "待PM打分" : t.status === "pmDone" ? "待领导归档" : "进行中";
         todos.push({
           icon: "📅",
+          mod: "perf",
           title: `${label}考核 · ${t.period}`,
           desc: `${t.ownerName} · ${stage}`,
           color: "#1677ff",
-          onClick: `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`,
+          onClick: _todoOnClick("perf", "paTableMonthly", `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`),
         });
       });
     }
@@ -140,10 +125,11 @@ function _collectTodos() {
       supTodos.slice(0, 5).forEach((t) => {
         todos.push({
           icon: "✍️",
+          mod: "perf",
           title: `待打分 · ${t.ownerName}`,
           desc: `${t.type === "monthly" ? "月度" : "年度"}考核 ${t.period}`,
           color: "#faad14",
-          onClick: `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`,
+          onClick: _todoOnClick("perf", "paTableMonthly", `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`),
         });
       });
     }
@@ -155,10 +141,11 @@ function _collectTodos() {
       pmTodos.slice(0, 5).forEach((t) => {
         todos.push({
           icon: "✍️",
+          mod: "perf",
           title: `待PM打分 · ${t.ownerName}`,
           desc: `${t.type === "monthly" ? "月度" : "年度"}考核 ${t.period}`,
           color: "#faad14",
-          onClick: `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`,
+          onClick: _todoOnClick("perf", "paTableMonthly", `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`),
         });
       });
     }
@@ -170,10 +157,11 @@ function _collectTodos() {
       leaderTodos.slice(0, 5).forEach((t) => {
         todos.push({
           icon: "🏆",
+          mod: "perf",
           title: `待归档 · ${t.ownerName}`,
           desc: `${t.type === "monthly" ? "月度" : "年度"}考核 ${t.period}`,
           color: "#722ed1",
-          onClick: `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`,
+          onClick: _todoOnClick("perf", "paTableMonthly", `__paType='${t.type}';openPaTableDetail('${t.ownerId}','${t.period}')`),
         });
       });
     }
@@ -189,10 +177,11 @@ function _collectTodos() {
         const stage = c.reviewStatus === "pending" ? "初审" : c.reviewStatus === "firstReviewed" ? "部门审核" : "副总工批准";
         todos.push({
           icon: "💡",
+          mod: "dev",
           title: `案例${stage} · ${c.title}`,
           desc: `${c.shareName}（${c.shareDept || ""}）`,
           color: "#52c41a",
-          onClick: `openEcReviewModal('${c.id}','${c.reviewStatus === "pending" ? "first" : c.reviewStatus === "firstReviewed" ? "dept" : "final"}')`,
+          onClick: _todoOnClick("dev", "ec", `openEcReviewModal('${c.id}','${c.reviewStatus === "pending" ? "first" : c.reviewStatus === "firstReviewed" ? "dept" : "final"}')`),
         });
       });
     }
@@ -202,10 +191,11 @@ function _collectTodos() {
       const stageMap = { pending: "待初审", firstReviewed: "待部门审核", deptReviewed: "待副总工批准", returned: "已退回" };
       todos.push({
         icon: "📝",
+        mod: "dev",
         title: `我的案例 · ${c.title}`,
         desc: stageMap[c.reviewStatus] || c.reviewStatus,
         color: "#13c2c2",
-        onClick: `openEcDetail('${c.id}')`,
+        onClick: _todoOnClick("dev", "ec", `openEcDetail('${c.id}')`),
       });
     });
   }
@@ -215,10 +205,11 @@ function _collectTodos() {
     if (disabled > 0) {
       todos.push({
         icon: "👤",
+        mod: "sys",
         title: `停用账号（${disabled}）`,
         desc: "前往账号管理处理",
         color: "#ff4d4f",
-        onClick: "selectModule('sys');selectSub('sysAcct')",
+        onClick: _todoOnClick("sys", "sysAcct", "selectModule('sys');selectSub('sysAcct')"),
       });
     }
   }
@@ -271,71 +262,293 @@ function showLoginTodoModal(force) {
   openModal(modalContent(`🔔 待办提醒（${count}）`, body, foot), "520px");
 }
 
-/* ========== OA 门户 · 工作台（平台首页） ==========
- * 构成：问候语 + 角色标签 → 我的待办 | 通知公告 → 全部板块磁贴（大卡片）→ 我的常用应用
+/* ========== 主系统门户（平台首页 = 各子系统入口） ==========
+ * 门户卡可见性过滤统一使用 config-portal.js 的 _portalAppAllowed
+ * （roles 过滤 + 内部卡模块权限 + 上架状态），避免双份实现漂移。
+ * 首页构成（v5）：左侧栏 portal-side（用户卡 / 常用应用 / 系统管理〔仅
+ * sysAdmin〕，紧凑渲染函数在 views-portal.js，经 window 守卫调用）
+ * + 右侧主区 portal-main-col（hero 标题 → 业务子系统卡网格 → 外部系统卡网格）。
+ * v5 起调整：crumb 去掉「主系统」一级只保留公告条（公告去掉发布人/时间）；
+ * 操作说明书入口下线；系统管理由主区「平台入口」卡片区迁入侧栏。
+ * v5.2 起侧栏扩充：用户卡加日期进度小字；新增待办摘要行（紧凑徽标，点击弹
+ * 铃铛面板）与最近访问（自动记录，按账号隔离，最多 8 条展示 5 条）。
  */
 
-/** 工作台「我的待办」面板（数据复用 _collectTodos，与铃铛弹窗同源） */
-function _portalTodoPanel() {
-  const todos = _collectTodos();
-  const list = todos.slice(0, 5).map((t) => `
-    <div class="portal-todo" onclick="${t.onClick}">
-      <div class="home-todo-icon" style="background:${t.color}1a;color:${t.color}">${t.icon}</div>
-      <div class="home-todo-body">
-        <div class="home-todo-title">${_escape(t.title)}</div>
-        <div class="home-todo-desc">${_escape(t.desc)}</div>
-      </div>
-      <div class="home-todo-arrow">›</div>
-    </div>`).join("");
-  return `<div class="portal-panel">
-    <div class="portal-panel-head">
-      <span class="portal-panel-title">⚡ 我的待办${todos.length > 0 ? `<span class="portal-panel-badge">${todos.length} 条</span>` : ""}</span>
+/** 单张子系统卡（内部卡新窗口打开独立子系统页；外部卡新窗口打开外链）
+ * 内部卡使用门户配置的主题配色（theme，portal-config 维护；缺省回落默认色）
+ * v6.0：内部卡首个字段由「子系统 N 个」改为「编码」（取门户卡 key，即 subs/<key>.html 的文件名） */
+function _subAppCardHtml(app) {
+  const isExt = app.kind === "external";
+  const mod = app.mod || "";
+  const statusText = (typeof _portalStatusText === "function") ? _portalStatusText(app.status) : "正常";
+  const theme = (!isExt && typeof getPortalTheme === "function") ? getPortalTheme(app) : null;
+  const tc = theme ? theme.base : "";
+  const iconStyle = tc ? ` style="background:${tc}1f;color:${tc}"` : "";
+  const pill = isExt
+    ? '<span class="sub-card-pill external">外部系统</span>'
+    : `<span class="sub-card-pill internal" style="color:${tc || "#0f6e56"};border-color:${tc ? tc + "66" : "#5dcaa5"};background:${tc ? tc + "14" : "#e1f5ee"}">内部系统</span>`;
+  const fields = isExt
+    ? [["类型", "外部系统"], ["打开方式", "新窗口"], ["状态", statusText]]
+    : [["编码", app.key || "-", "sub-card-field-code"], ["类型", "内部系统"], ["状态", statusText]];
+  const onClick = isExt
+    ? `window.open('${app.url}', '_blank')`
+    : `openSubsystem('${mod}')`;
+  const enterStyle = tc ? ` style="color:${tc}"` : "";
+  const cardStyle = tc ? ` style="--card-theme:${tc}"` : "";
+  return `<div class="sub-card${isExt ? " ext" : ""}"${cardStyle} onclick="${onClick}">
+    <div class="sub-card-head">
+      <div class="sub-card-icon"${iconStyle}>${app.icon || "📦"}</div>
+      <div class="sub-card-name">${_escape(app.name)}</div>
+      ${pill}
     </div>
-    <div class="portal-panel-body">${list || '<div class="portal-panel-empty">🎉 暂无待办事项</div>'}</div>
+    <div class="sub-card-desc">${_escape(app.desc || "")}</div>
+    <div class="sub-card-fields">${fields.map(([k, v, cls]) => `<div class="sub-card-field${cls ? " " + cls : ""}"><span>${k}</span><b>${_escape(String(v))}</b></div>`).join("")}</div>
+    <div class="sub-card-enter"${enterStyle}>${isExt ? "新窗口打开 ↗" : "进入系统 →"}</div>
   </div>`;
+}
+
+/* ---------- 跨窗口跳转助手（v2 窗口级分离） ----------
+ * 子系统为独立窗口：待办 / 搜索进入等跨模块跳转一律新开目标窗口落地，
+ * 同窗口内则保持原站内行为（模态 / 站内导航）。 */
+
+/** 新开对应子系统窗口，并落到指定二级页（?m=viewKey） */
+function __jumpSub(appKey, viewKey) {
+  const prefix = (typeof window !== "undefined" && window.__SUB_KEY) ? "../" : "";
+  window.open(prefix + "subs/" + appKey + ".html" + (viewKey ? "?m=" + encodeURIComponent(viewKey) : ""), "_blank");
+}
+
+/** 跳主系统模块（系统管理等留在主门户的模块）：新开主门户深链落地 */
+function __jumpMain(modKey, viewKey) {
+  const prefix = (typeof window !== "undefined" && window.__SUB_KEY) ? "../" : "";
+  window.open(prefix + "index.html?m=" + encodeURIComponent(modKey) + (viewKey ? "&v=" + encodeURIComponent(viewKey) : ""), "_blank");
+}
+
+/** 待办条目 onclick 构造：同窗口走 modalJs（模态/站内导航），跨窗口走新开落地 */
+function _todoOnClick(appKey, viewKey, modalJs) {
+  const cur = (typeof window !== "undefined" && window.__SUB_KEY) || "";
+  if (cur === appKey) return modalJs;
+  if (!cur && appKey === "sys") return modalJs;
+  if (appKey === "sys") return `__jumpMain('sys','sysAcct')`;
+  return `__jumpSub('${appKey}','${viewKey}')`;
 }
 
 function renderHome() {
-  const name = window.CURR_ACCT_NAME || "";
-  const mods = _sortedMenus().filter(([k]) => k !== "home" && canAccessModule(k));
-  const tiles = mods.map(([k, m]) => _portalModuleTile(k, m)).join("");
-  // 列数钳制在 4~6：不足 4 个板块也至少 4 列（卡片拉宽），最多 6 个一行
-  const modCols = Math.max(4, Math.min(mods.length, 6));
-  const body = tiles
-    ? `<div class="portal-grid portal-grid-modules" style="--cols:${modCols}">${tiles}</div>`
-    : `<div class="empty" style="margin-top:24px">🔒 暂无可访问的板块，请联系管理员开通权限</div>`;
-  return `
+  const apps = (typeof getPortalApps === "function" ? getPortalApps() : [])
+    .filter(_portalAppAllowed);
+  const internalApps = apps.filter((a) => a.kind !== "external");
+  const externalApps = apps.filter((a) => a.kind === "external");
+  const cards = (list) => list.map(_subAppCardHtml).join("");
+  /* 左侧栏：用户卡（含日期进度）+ 待办摘要行 + 常用应用 + 最近访问 + 系统管理
+ * （仅 sysAdmin；v5 起由主区平台入口迁入侧栏；渲染函数在 views-portal.js，
+ * 经 window 守卫调用） */
+  const side = `
+    ${window._portalSideUser ? _portalSideUser() : ""}
+    ${window._portalSideTd ? _portalSideTd() : ""}
+    ${window._portalSideFav ? _portalSideFav() : ""}
+    ${window._portalSideRecent ? _portalSideRecent() : ""}
+    ${window._portalSideSys ? _portalSideSys() : ""}`;
+  const body = `
   <div class="portal-home">
-    <div class="portal-hello">
-      <div class="portal-hello-avatar">${_escape((name || "👤").charAt(0))}</div>
-      <div class="portal-hello-text">
-        <div class="portal-hello-hi">${_greeting()}，${_escape(name) || "同学"} 👋</div>
-        <div class="portal-hello-sub">${PAGES.home.desc}</div>
+    <aside class="portal-side">${side}</aside>
+    <div class="portal-main-col">
+      <div class="portal-hero">
+        <div class="portal-hero-text">
+          <div class="portal-hero-title">${PAGES.portal.title}<span class="portal-hero-en">${_escape(PAGES.portal.en)}</span></div>
+          <div class="portal-hero-desc">${PAGES.portal.desc}</div>
+        </div>
       </div>
+      ${internalApps.length
+        ? `<div class="portal-section-title">🚪 业务子系统</div>
+           <div class="sub-grid">${cards(internalApps)}</div>`
+        : '<div class="empty" style="margin-top:16px">🔒 暂无可访问的子系统，请联系管理员开通权限</div>'}
+      ${externalApps.length
+        ? `<div class="portal-section-title">🔗 外部系统</div>
+           <div class="sub-grid">${cards(externalApps)}</div>`
+        : ""}
     </div>
-    <div class="portal-section-title">📦 全部板块<span class="portal-section-sub">（按当前角色权限显示，共 ${mods.length} 个板块）</span></div>
-    ${body}
-    ${window._portalFavSection ? _portalFavSection() : ""}
-    <div class="portal-panel-row">
-      ${_portalTodoPanel()}
-      ${window._portalNoticePanel ? _portalNoticePanel() : ""}
+  </div>`;
+  return body;
+}
+
+/* ========== OA 门户 · 子系统首页（工作台式，v6.3） ==========
+ * 结构：定位条 → 数据摘要 → 功能入口卡。
+ * v6.3 按反馈精简：去掉右栏（我的待办 / 通知公告）、定位条的新增与搜索按钮、
+ * 卡片内的最近内容摘要——首页只保留「我在哪个系统 / 整体规模多少 / 有哪些入口」。
+ * 指标由既有数据层实时计算（STANDARDS / EC_CASES / PA_* / ASSET_*），不新增存储字段；
+ * 无对应数据源的模块（项目管理）只给结构性指标，页面结构保持一致。
+ * 主题色统一走 CSS 变量（--btBlue 等），四子系统随 applySubsystemTheme 各自换肤。 */
+
+/** 子系统首页定位语（一句话说明这个系统解决什么问题） */
+const SUB_HOME_TAGLINE = {
+  proj: "研发设计与阶段评审的线上流转与归档",
+  dev: "标准与经验案例的统一检索、阅读与沉淀",
+  asset: "规范、模板与评审检查项的统一资产库",
+  perf: "月度 / 年度考核的模板、打分与结果",
+};
+
+/** 数据层安全读取：脚本未加载或尚未初始化时返回空数组，避免子系统首页整体报错 */
+function _shList(v) {
+  return Array.isArray(v) ? v : [];
+}
+function _shStds() {
+  return typeof STANDARDS !== "undefined" ? _shList(STANDARDS) : [];
+}
+function _shEcs() {
+  return typeof EC_CASES !== "undefined" ? _shList(EC_CASES) : [];
+}
+function _shPaTpls() {
+  return typeof PA_TEMPLATES !== "undefined" ? _shList(PA_TEMPLATES) : [];
+}
+function _shPaResults() {
+  return typeof PA_RESULTS !== "undefined" ? _shList(PA_RESULTS) : [];
+}
+/** 过程资产四类内容（键顺序即「开发规范 / 文档模板 / 设计规范 / 评审 Checklist」） */
+function _shAssets() {
+  return [
+    { key: "sub-spec", list: typeof ASSET_SPECS !== "undefined" ? _shList(ASSET_SPECS) : [], },
+    { key: "sub-tpl", list: typeof ASSET_TPLS !== "undefined" ? _shList(ASSET_TPLS) : [], },
+    { key: "sub-design", list: typeof ASSET_DESIGNS !== "undefined" ? _shList(ASSET_DESIGNS) : [], },
+    { key: "sub-check", list: typeof ASSET_CHECKS !== "undefined" ? _shList(ASSET_CHECKS) : [], },
+  ];
+}
+
+/** 最近 N 天（时间戳缺失时视为不满足） */
+function _shWithin(ts, days) {
+  return !!ts && Date.now() - ts < days * 86400000;
+}
+
+/** 数据摘要：返回 [{ label, value, hint }]
+ *  v6.4：hint 不再带计量单位（条 / 个 / 篇 / 套 / 人 / 份）——label 已说明统计对象，
+ *  数字本身足够；纯单位 hint 直接留空，节点不渲染。hint 仅保留有信息量的说明。 */
+function _shKpis(mk) {
+  const myId = window.CURR_ACCT_ID || "";
+  if (mk === "dev") {
+    const stds = _shStds();
+    const ecs = _shEcs();
+    const cur = stds.filter((s) => s.status === "current").length;
+    const approved = ecs.filter((c) => c.reviewStatus === "finalApproved").length;
+    const added = stds.filter((s) => _shWithin(s.createdAt, 30)).length + ecs.filter((c) => _shWithin(c.createdAt, 30)).length;
+    /* 审核岗看全局待审，普通岗看自己待过审的 */
+    const canReview = !!(window.currentCanAction && window.currentCanAction("dev", "ec", "admin"));
+    const pending = canReview
+      ? ecs.filter((c) => ["pending", "firstReviewed", "deptReviewed"].indexOf(c.reviewStatus) >= 0).length
+      : ecs.filter((c) => (c.shareEmpId || "") === myId && c.reviewStatus !== "finalApproved").length;
+    return [
+      { label: "标准总数", value: stds.length, hint: "现行 " + cur },
+      { label: "经验案例", value: approved, hint: "共 " + ecs.length },
+      { label: "近 30 天新增", value: added, hint: "标准 + 案例" },
+      { label: canReview ? "待我审核" : "我的待审", value: pending, hint: pending ? "案例待处理" : "暂无积压" },
+    ];
+  }
+  if (mk === "asset") {
+    const a = _shAssets();
+    const n = (k) => (a.find((x) => x.key === k) || {}).list.length || 0;
+    return [
+      { label: "开发规范", value: n("sub-spec") },
+      { label: "文档模板", value: n("sub-tpl") },
+      { label: "设计规范", value: n("sub-design") },
+      { label: "评审检查", value: n("sub-check") },
+    ];
+  }
+  if (mk === "perf") {
+    const people = window._paBuildPeople ? window._paBuildPeople() : [];
+    /* 考核指标 = 启用模板的评分项合计（无考核表数据时也能反映配置规模） */
+    const items = _shPaTpls()
+      .filter((t) => t.active)
+      .reduce((n, t) => n + _shList(t.items).length, 0);
+    return [
+      { label: "考核模板", value: _shPaTpls().length },
+      { label: "考核覆盖", value: people.length },
+      { label: "考核指标", value: items, hint: "启用模板评分项" },
+      { label: "考核结果", value: _shPaResults().length },
+    ];
+  }
+  /* 无独立数据层的模块（项目管理）：没有可统计的真实指标，不摆占位数字，
+     数据摘要整段省略（v6.3 起「我的待办」不再出现在子系统首页） */
+  return [];
+}
+
+/** 定位条（v6.3：不再放新增/搜索按钮，只交代「这是哪个系统、解决什么问题」） */
+function _shHero(mk, m, subsCount) {
+  const tagline = SUB_HOME_TAGLINE[mk] || "";
+  return `<div class="sy-hero">
+    <div class="sy-hero-main">
+      <div class="sy-hero-icon">${m.icon || "📦"}</div>
+      <div class="sy-hero-text">
+        <div class="sy-hero-title">${_escape(m.name)}<span class="sy-hero-tag">${subsCount} 个功能入口</span></div>
+        <div class="sy-hero-desc">${_escape(tagline || "本子系统的功能入口一览")}</div>
+      </div>
     </div>
   </div>`;
 }
 
-/* ========== OA 门户 · 板块首页（子系统磁贴一次性铺开） ========== */
+/** 单个功能入口卡（v6.5）：沿用主系统首页业务子系统卡的视觉体系
+ *  （白卡 + 12px 圆角 + 40px 主题渐变图标底座 + 名称 + 描述 + 细线底栏），
+ *  但只保留入口真正需要的三样东西：图标 / 名称 / 描述，底栏左侧放子项数胶囊、
+ *  右侧放「进入 →」。v6.5 去掉「编码 / 类型」属性格——6 列栅格下卡宽约 210px，
+ *  属性格会把卡片撑得很碎，且对内使用者来说菜单 key 与列表形态没有决策价值。 */
+function _shCardHtml(mk, sub) {
+  const isExt = sub.type === "external" && sub.url;
+  const onClick = isExt
+    ? `window.open('${sub.url}', '_blank')`
+    : (sub.action ? `selectActionSub('${sub.key}')` : `selectSub('${sub.key}')`);
+  const desc = (typeof SUB_DESC !== "undefined" && SUB_DESC[sub.key]) || "";
+  const children = _visibleChildren(mk, sub.key);
+  const pill = isExt
+    ? '<span class="sub-card-pill external">外部链接</span>'
+    : (children.length ? `<span class="sub-card-pill">${children.length} 个子项</span>` : "<span></span>");
+  return `<div class="sub-card sy-card${isExt ? " ext" : ""}" onclick="${onClick}">
+    <div class="sub-card-head">
+      <div class="sub-card-icon">${sub.icon || "📄"}</div>
+      <div class="sub-card-name">${_escape(sub.name)}</div>
+    </div>
+    <div class="sub-card-desc">${_escape(desc || "本子系统的功能入口")}</div>
+    <div class="sy-card-foot">${pill}<span class="sub-card-enter">进入${sub.action ? "办理" : ""} →</span></div>
+  </div>`;
+}
 
+/** 子系统首页（renderModuleHome 的实现入口）
+ *  v6.2：仅**子系统窗口**（window.__SUB_KEY 存在）使用工作台式布局；
+ *  主系统窗口内的模块页（系统管理）仍为原「磁贴铺开」形态，保持主系统观感不变。
+ *  v6.3：整页三段落——定位条 / 数据摘要 / 功能入口，无右栏。 */
 function renderModuleHome() {
   const mk = window.curModule || curModule;
   const m = MODULES[mk];
   const subs = _visibleSubs(mk);
-  const tiles = subs.map((s) => _portalSubTile(mk, s, "")).join("");
-  // 列数钳制在 6~8：不足 6 个也至少 6 列，最多 8 个一行
-  const cols = Math.max(6, Math.min(Math.max(subs.length, 1), 8));
-  return `
+  if (!m) return renderPlaceholder();
+
+  if (!(typeof window !== "undefined" && window.__SUB_KEY)) {
+    const tiles = subs.map((s) => _portalSubTile(mk, s, "")).join("");
+    /* 列数钳制在 6~8：不足 6 个也至少 6 列，最多 8 个一行 */
+    const cols = Math.max(6, Math.min(Math.max(subs.length, 1), 8));
+    return `
   ${pageHeader(`${m.icon || "📦"} ${m.name}`, `共 ${subs.length} 个子系统`)}
   <div class="portal-grid portal-grid-subs" style="--cols:${cols}">${tiles}</div>`;
+  }
+
+  /* 数据摘要整段可缺席：项目管理子系统没有数据层时不出这一段，避免空白指标 */
+  const kpiList = _shKpis(mk);
+  const kpisHtml = kpiList.length
+    ? `<div class="sy-kpis">${kpiList
+        .map(
+          (k) =>
+            `<div class="sy-kpi"><div class="sy-kpi-label">${_escape(k.label)}</div><div class="sy-kpi-value">${k.value}</div>` +
+            `${k.hint ? `<div class="sy-kpi-hint">${_escape(k.hint)}</div>` : ""}</div>`
+        )
+        .join("")}</div>`
+    : "";
+  const cards = subs.map((s) => _shCardHtml(mk, s)).join("");
+  /* v6.5：栅格统一 6 列（入口数不足也保持 6 列，卡片宽度一致、左对齐），
+     窄屏由 CSS 断点降列 */
+  return `
+  <div class="sy-page">
+    ${_shHero(mk, m, subs.length)}
+    ${kpisHtml}
+    <div class="sy-section-title">功能入口</div>
+    <div class="sy-cards" style="--sy-cols:6">${cards}</div>
+  </div>`;
 }
+
 
 /* ========== OA 门户 · 二级分组页（三级子系统磁贴铺开） ========== */
 
@@ -506,6 +719,8 @@ VIEWS.home = renderHome;
 
 /* ---------- 基座 window 挂载 ---------- */
 window.replaceView = replaceView;
+window.__jumpSub = __jumpSub;
+window.__jumpMain = __jumpMain;
 window._fmtDate = _fmtDate;
 window._foldText = _foldText;
 window._paStatusTag = _paStatusTag;
@@ -515,3 +730,4 @@ window._renderMd = _renderMd;
 window._downloadJson = _downloadJson;
 window.showLoginTodoModal = showLoginTodoModal;
 window.updateBellBadge = updateBellBadge;
+window.renderModuleHome = renderModuleHome;

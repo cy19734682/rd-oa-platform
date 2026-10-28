@@ -39,6 +39,8 @@ function startClock() {
 (function init() {
   // 加载菜单表（角色 perms 依赖 MENUS 结构，必须最先加载）
   loadMenus();
+  // 加载主系统门户配置（子系统入口卡：顺序 / 显隐 / 描述）
+  if (typeof window.loadPortal === "function") window.loadPortal();
   // 加载角色列表（角色内嵌 perms，无则按 MENUS 默认值初始化并写回 localStorage）
   loadRoles();
   // 同步 perms：补齐菜单变更带来的新/缺失 key

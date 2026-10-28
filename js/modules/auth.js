@@ -324,6 +324,12 @@ function logout() {
   }
   // 清除路由持久化（下次登录从首页开始）
   if (typeof window.clearRoute === "function") window.clearRoute();
+  /* 子系统窗口（v2）：无登录页，退登后显示门控引导回主系统登录 */
+  if (typeof window.__SUB_KEY !== "undefined" && window.__SUB_KEY && typeof window.showSubGate === "function") {
+    window.closeAvatarMenu && window.closeAvatarMenu();
+    window.showSubGate("login");
+    return;
+  }
   document.getElementById("view-login").style.display = "flex";
   document.getElementById("app").style.display = "none";
   document.getElementById("loginTip").style.display = "block";

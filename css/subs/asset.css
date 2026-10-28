@@ -1,0 +1,32 @@
+/* ========== 子系统独立样式 · 过程资产（asset） ==========
+ * 在 css/style.css 之后加载，覆写主题变量与局部组件，
+ * 使该子系统窗口拥有可感知的独立视觉身份（青色系 · 清爽底色）。
+ * 只做「变量 + 少量组件」级覆写，不复制整站样式。
+ */
+
+:root {
+  --primary: #08979c;
+  --btBlue: #08979c;
+  --iconBlue: #13c2c2;
+  --headerBg: #00626a;
+  --radius: 4px;
+}
+
+/* 子系统窗口底色微调（青灰） */
+body.in-subsystem {
+  --bg: color-mix(in srgb, var(--btBlue) 5%, white);
+}
+
+/* 子系统首页磁贴：青色悬停投影 + 左侧主题条加粗 */
+.portal-tile:hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.portal-tile::before {
+  width: 5px;
+}
+
+/* 页面主标题左侧主题短竖线 */
+.page-title {
+  border-left: 4px solid var(--primary);
+  padding-left: 10px;
+}

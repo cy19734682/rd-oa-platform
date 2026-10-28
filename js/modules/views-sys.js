@@ -391,6 +391,33 @@ function doDelDept(id) {
 }
 
 /* ---------- 系统：角色管理 ---------- */
+/** 指定角色是否可见某模块（镜像 canAccessModule 逻辑，但按传入角色而非当前角色计算） */
+function _roleCanSeeModule(roleKey, moduleKey) {
+  if (roleKey === "sysAdmin") return true;
+  const perms = ROLES[roleKey] && ROLES[roleKey].perms;
+  if (!perms) return false;
+  const mod = perms[moduleKey];
+  if (!mod) return false;
+  if (mod.enabled === true) return true;
+  if (!mod.subs) return false;
+  for (const sk in mod.subs) {
+    if (_hasAnyPerm(mod.subs[sk])) return true;
+  }
+  return false;
+}
+
+/** 指定角色在门户可见的卡片列表（门户卡 roles 过滤 + 内部卡模块授权 + 上架状态）
+ *  sysAdmin 为超级用户，不受 roles 白名单约束 */
+function _rolePortalApps(roleKey) {
+  const apps = typeof getPortalApps === "function" ? getPortalApps() : [];
+  return apps.filter((a) => {
+    if (a.enabled === false) return false;
+    if (roleKey !== "sysAdmin" && a.roles && a.roles.length && a.roles.indexOf(roleKey) < 0) return false;
+    if (a.kind === "internal") return !!a.mod && _roleCanSeeModule(roleKey, a.mod);
+    return true;
+  });
+}
+
 function renderSysRole() {
   const canAdd = window.currentCanAction("sys", "sysRole", "add");
   const canEdit = window.currentCanAction("sys", "sysRole", "edit");
@@ -411,14 +438,21 @@ function renderSysRole() {
     table(
       TH.sysRole,
       roles,
-      (r) => `
+      (r) => {
+        const portalApps = _rolePortalApps(r.key);
+        const portalCell = portalApps.length
+          ? portalApps.map((a) => `<span class="tag g">${_escape(a.name)}</span>`).join(" ")
+          : '<span class="muted">无（门户不可见任何卡片）</span>';
+        return `
         <td><code>${r.key}</code></td>
         <td>${r.name}</td>
+        <td>${portalCell}</td>
         <td>
           ${canEdit ? btn("权限配置", "ghost sm", `openPermConfigFor('${r.key}')`) : ""}
           ${canEdit ? btn("编辑", "ghost sm", `openEditRole('${r.key}')`) : ""}
           ${canDel ? (r.builtin ? btn("删除", "gray sm", `toast('内置角色不可删除')`) : btn("删除", "danger sm", `delRole('${r.key}')`)) : ""}
-        </td>`,
+        </td>`;
+      },
     ),
   )}`;
 }
@@ -849,6 +883,13 @@ function renderSysMenu() {
   const canAdd = window.currentCanAction("sys", "sysMenu", "add");
   const canEdit = window.currentCanAction("sys", "sysMenu", "edit");
   const canDel = window.currentCanAction("sys", "sysMenu", "delete");
+  const header = pageHeader(PAGES.sysMenu ? PAGES.sysMenu.title : "菜单管理", PAGES.sysMenu ? PAGES.sysMenu.desc : "管理系统的菜单模块和子菜单，修改后角色权限配置将自动同步");
+  const tabs = _sysMenuTabs();
+  /* 门户配置 tab：子系统上架 / 排序 / 元数据 / 主题配色 / 可见角色 / 新增外部系统 */
+  if ((window.__sysMenuTab || "portal") !== "subs") {
+    return `${header}${tabs}${_renderPortalConfigTab(canEdit, canAdd)}`;
+  }
+  /* 子系统菜单 tab：既有三级菜单树原样保留 */
   const menus = _sortedMenus();
   // 构建模块卡片列表
   const cards = menus
@@ -882,12 +923,348 @@ function renderSysMenu() {
     })
     .join("");
   return `
-  ${pageHeader(PAGES.sysMenu ? PAGES.sysMenu.title : "菜单管理", PAGES.sysMenu ? PAGES.sysMenu.desc : "管理系统的菜单模块和子菜单，修改后角色权限配置将自动同步")}
+  ${header}${tabs}
   ${toolbar(
     `共 ${menus.length} 个模块 · ${menus.reduce((t, [, m]) => t + (m.subs ? m.subs.length : 0), 0)} 个子菜单`,
     `${canAdd ? btn("+ 新增模块", "sm", "openAddMenuModule()") : ""}`,
   )}
   ${zone(`<div class="menu-list">${cards}</div>`, "🧭 菜单结构", "")}`;
+}
+
+/** 菜单管理页 tab 栏（门户配置 / 子系统菜单） */
+function _sysMenuTabs() {
+  const cur = (window.__sysMenuTab || "portal") === "subs" ? "subs" : "portal";
+  const tab = (k, label, hint) =>
+    `<span class="sys-menu-tab${cur === k ? " on" : ""}" onclick="switchSysMenuTab('${k}')" title="${hint}">${label}</span>`;
+  return `<div class="sys-menu-tabs">` +
+    tab("portal", "🗂 门户配置", "门户卡片：上架 / 排序 / 主题 / 角色，可新增外部系统") +
+    tab("subs", "🧭 子系统菜单", "各子系统内部的三级菜单树") +
+    `</div>`;
+}
+
+/** 切换菜单管理页 tab 并刷新 */
+function switchSysMenuTab(tab) {
+  window.__sysMenuTab = tab === "subs" ? "subs" : "portal";
+  if (typeof replaceView === "function") replaceView();
+  else if (typeof window.renderCurView === "function") window.renderCurView();
+}
+
+/** 门户配置 tab：门户卡列表（排序 / 上下架 / 编辑 / 新增外部系统） */
+function _renderPortalConfigTab(canEdit, canAdd) {
+  const apps = typeof getPortalApps === "function" ? getPortalApps() : [];
+  const internalCount = apps.filter((a) => a.kind !== "external").length;
+  const tableHtml = apps.length
+    ? table(TH.portalCfg, apps, (app, i) => {
+        const isExt = app.kind === "external";
+        const typeBadge = isExt
+          ? `<span class="badge" style="background:#e6f7ff;color:#1890ff;border-color:#91d5ff">外部系统</span>`
+          : `<span class="badge" style="background:#f6ffed;color:#52c41a;border-color:#b7eb8f">内部系统</span>`;
+        const target = isExt
+          ? `<span class="ms-url muted" title="${app.url || ""}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">${app.url || "-"}</span>`
+          : `<code>${app.mod || "-"}</code>`;
+        const enabled = app.enabled !== false;
+        const statusCell = `<div style="display:flex;gap:6px;flex-wrap:wrap">` +
+          (enabled
+            ? `<span class="badge" style="background:#f6ffed;color:#52c41a;border-color:#b7eb8f">已上架</span>`
+            : `<span class="badge" style="background:#fff1f0;color:#cf1322;border-color:#ffa39e">已下架</span>`) +
+          (app.status === "maintenance"
+            ? `<span class="badge" style="background:#fff7e6;color:#d46b08;border-color:#ffd591">维护中</span>`
+            : `<span class="badge" style="background:#f6ffed;color:#52c41a;border-color:#b7eb8f">正常</span>`) +
+          `</div>`;
+        const rolesCell = app.roles && app.roles.length
+          ? app.roles.map((rk) => `<span class="tag g">${_escape(ROLES[rk] ? ROLES[rk].name : rk)}</span>`).join(" ")
+          : '<span class="muted">全部角色</span>';
+        /* 主题圆点：提示文案区分「已单独指定」与「跟随板块默认」 */
+        const ptTheme = !isExt && typeof getPortalTheme === "function" ? getPortalTheme(app) : null;
+        const themeDot = ptTheme
+          ? `<span class="pt-dot" style="background:${ptTheme.base}" title="主题配色：${ptTheme.name}${app.theme ? "" : "（跟随板块默认）"}"></span>`
+          : "";
+        const actions = [
+          i > 0 && canEdit ? btn("↑", "ghost sm", `movePortalAppBtn('${app.key}', -1)`) : "",
+          i < apps.length - 1 && canEdit ? btn("↓", "ghost sm", `movePortalAppBtn('${app.key}', 1)`) : "",
+          canEdit ? btn(enabled ? "下架" : "上架", "ghost sm", `togglePortalApp('${app.key}')`) : "",
+          canEdit ? btn("编辑", "ghost sm", `openEditPortalApp('${app.key}')`) : "",
+        ].filter(Boolean).join(" ");
+        return `
+          <td><span class="menu-card-key"><code>#${app.order || "-"}</code></span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="menu-card-ic">${app.icon || "📦"}</span>
+              ${themeDot}
+              <div>
+                <div style="font-weight:600;color:var(--title)">${_escape(app.name)}</div>
+                <div><code>${app.key}</code></div>
+              </div>
+            </div>
+          </td>
+          <td>${typeBadge}<div style="margin-top:4px">${target}</div></td>
+          <td>${statusCell}</td>
+          <td>${rolesCell}</td>
+          <td><span class="muted" style="display:inline-block;max-width:220px">${_escape(app.desc || "-")}</span></td>
+          <td><span class="ms-actions">${actions}</span></td>`;
+      }, "", 300)
+    : '<div class="empty">暂无门户卡（种子为空）</div>';
+  return `
+  ${toolbar(
+    `共 ${apps.length} 张门户卡 · 内部 ${internalCount} · 外部 ${apps.length - internalCount} · 下架后门户不再展示`,
+    canAdd ? btn("+ 新增外部系统", "sm", "openAddPortalApp()") : "",
+  )}
+  ${zone(tableHtml, "🗂 门户卡片配置", "")}`;
+}
+
+/** 门户卡角色多选 HTML（编辑 / 新增弹窗共用；整齐两列网格 + 主题色复选框） */
+function _portalRoleCbs(selected) {
+  const sel = selected || [];
+  return Object.entries(ROLES).map(([k, v]) =>
+    `<label class="fav-manage-item"><input type="checkbox" class="portal-role-cb" value="${k}" ${sel.indexOf(k) >= 0 ? "checked" : ""}> ${_escape(v.name)}</label>`,
+  ).join("");
+}
+
+/** 门户卡主题色板（仅内部卡；默认 + 8 预设 + 自定义）
+ *  radio 隐藏于 label 内，选中态由 ptThemePick() 实时切换 .on；
+ *  「自定义」格内置取色器（v5.8）：格里的色点本身就是 input[type=color]，点格子即进入
+ *  自定义并就地唤起取色盘，标签实时显示色值（#RRGGBB），不再另起一行取色器；
+ *  首次取色从当前生效色起步，同一弹窗内切到预设再点回来会恢复上次选的自定义色。
+ *  打开弹窗按「当前生效主题」预选中（v5.7）：已存 theme 优先；未存 theme 时回落到
+ *  getPortalTheme() 解析出的板块默认色，与门户卡上的主题圆点保持一致——旧版数据
+ *  （卡片无 theme 字段）此前会落在灰色「默认」上，看起来像主题没选中。
+ *  未改动色板就保存时不改写主题，保留「跟随板块默认」语义，不会被动钉成某个预设。 */
+function _portalThemeCells(curKey, effective) {
+  const themes = (typeof PORTAL_THEMES !== "undefined" && PORTAL_THEMES) || [];
+  const stored = String(curKey == null ? "" : curKey).trim();
+  const eff = effective || null;
+  const isPreset = (v) => !!v && themes.some((t) => t.key === v);
+  const isHex = (v) => /^#[0-9a-fA-F]{6}$/.test(String(v || ""));
+  /* 已存值：预设 key 或自定义 #hex；无法识别的脏值按「未设置」处理 */
+  const storedPreset = isPreset(stored) ? stored : "";
+  const storedCustom = !storedPreset && isHex(stored) ? stored.toLowerCase() : "";
+  const hasStored = !!(storedPreset || storedCustom);
+  /* 未设置：跟随板块默认色（可能是预设，也可能是旧版色值） */
+  const inheritPreset = !hasStored && eff && isPreset(eff.key) ? eff.key : "";
+  const inheritCustom = !hasStored && eff && !isPreset(eff.key) && isHex(eff.base) ? eff.base.toLowerCase() : "";
+  const selKey = storedPreset || inheritPreset;
+  const customHex = storedCustom || inheritCustom;
+  /* 记住自定义色 / 当前生效色：切到预设再点回来可恢复，首次取色从当前生效色起步 */
+  if (customHex) __paCustomHex = customHex;
+  __paBaseHex = eff && isHex(eff.base) ? eff.base.toLowerCase() : "";
+  const cell = (val, name, dotStyle, on, extraCls, dotId, tip) => `
+    <label class="pt-cell${on ? " on" : ""}${extraCls ? " " + extraCls : ""}" title="${tip || name}">
+      <input type="radio" name="paTheme" value="${val}"${on ? " checked" : ""} onchange="ptThemePick(this)">
+      <span class="pt-dot"${dotId ? ` id="${dotId}"` : ""} style="${dotStyle}"></span>
+      <span class="pt-name">${name}</span>
+    </label>`;
+  const defTip = "跟随板块默认色" + (eff && eff.name ? "（当前：" + eff.name + "）" : "");
+  const defCell = cell("", "默认", "background:#c9cdd4", !selKey && !customHex, "", "", defTip);
+  const presetCells = themes
+    .map((t) => cell(t.key, t.name, `background:${t.base}`, t.key === selKey, "", "", ""))
+    .join("");
+  /* 自定义格：有色值时色点直接是取色器；没有色值时是彩虹色点，点格子后原生替换为取色器 */
+  const customDotHtml = customHex
+    ? `<input type="color" class="pt-dot pt-color" id="paThemeColor" value="${customHex}" oninput="ptThemeColor(this)" title="点此选择自定义主题色">`
+    : `<span class="pt-dot" id="paCustomDot" style="background:conic-gradient(from 210deg,#f5222d,#fa8c16,#fadb14,#52c41a,#13c2c2,#1677ff,#722ed1,#f5222d)"></span>`;
+  const customCell = `
+    <div class="pt-cell pt-custom${customHex ? " on" : ""}" title="自定义主题色：点格子直接取色" onclick="ptThemePickCustom(event)">
+      <input type="radio" name="paTheme" value="__custom__"${customHex ? " checked" : ""} onchange="ptThemePick(this)">
+      ${customDotHtml}
+      <span class="pt-name" id="paCustomName">${customHex || "自定义"}</span>
+    </div>`;
+  return `${defCell}${presetCells}${customCell}`;
+}
+
+/** 主题色板是否被用户手动改过（未改过则保存时不写 theme，保留“跟随板块默认”） */
+let __paThemeTouched = false;
+/** 上一次使用的自定义色（同一弹窗内切预设后保留，便于再次恢复） */
+let __paCustomHex = "";
+/** 当前生效色的 hex（首次进入自定义时的取色起点） */
+let __paBaseHex = "";
+
+/** 主题色板选中态实时同步（radio 视觉隐藏，靠 .on 反馈） */
+function ptThemePick(input) {
+  __paThemeTouched = true;
+  const grid = input.closest ? input.closest(".pt-grid") : null;
+  if (!grid) return;
+  const cells = grid.querySelectorAll(".pt-cell");
+  for (let i = 0; i < cells.length; i++) cells[i].classList.remove("on");
+  const cell = input.closest ? input.closest(".pt-cell") : null;
+  if (cell) cell.classList.add("on");
+}
+
+/** 把「自定义」格的彩虹色点就地换成原生取色器（不新增任何行外元素） */
+function ptThemeEnsureColorInput() {
+  const exist = document.getElementById("paThemeColor");
+  if (exist && String(exist.tagName).toUpperCase() === "INPUT") return exist;
+  const dot = document.getElementById("paCustomDot");
+  if (!dot || !dot.parentNode) return exist || null;
+  const el = document.createElement("input");
+  el.type = "color";
+  el.id = "paThemeColor";
+  el.className = "pt-dot pt-color";
+  el.value = __paCustomHex || __paBaseHex || "#7c5cff";
+  el.title = "点此选择自定义主题色";
+  el.setAttribute("oninput", "ptThemeColor(this)");
+  dot.parentNode.replaceChild(el, dot);
+  return el;
+}
+
+/** 点「自定义」格：进入自定义选中态并就地唤起取色盘（点色点本身不拦截，交给取色器） */
+function ptThemePickCustom(ev) {
+  const t = ev && ev.target;
+  if (t && String(t.tagName).toUpperCase() === "INPUT" && String(t.type).toLowerCase() === "color") return;
+  const radio = document.querySelector('input[name="paTheme"][value="__custom__"]');
+  if (!radio) return;
+  radio.checked = true;
+  ptThemePick(radio);
+  const el = ptThemeEnsureColorInput();
+  if (el) {
+    __paCustomHex = String(el.value || "").toLowerCase();
+    const nameEl = document.getElementById("paCustomName");
+    if (nameEl) nameEl.textContent = __paCustomHex;
+    el.click();
+  }
+}
+
+/** 取色器变色：标签显示色值 + 联动勾选「自定义」（色点即取色器本身，无需另刷） */
+function ptThemeColor(input) {
+  const v = String(input.value || "").toLowerCase();
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) return;
+  __paCustomHex = v;
+  __paThemeTouched = true;
+  const nameEl = document.getElementById("paCustomName");
+  if (nameEl) nameEl.textContent = v;
+  const radio = document.querySelector('input[name="paTheme"][value="__custom__"]');
+  if (radio && !radio.checked) {
+    radio.checked = true;
+    ptThemePick(radio);
+  }
+}
+
+/** 打开门户卡编辑弹窗（名称 / 图标 / 描述 / 状态 / 可见角色 / 外链地址 / 主题配色） */
+function openEditPortalApp(appKey) {
+  if (!window.currentCanAction("sys", "sysMenu", "edit")) { toast("您没有编辑门户卡的权限"); return; }
+  const app = typeof findPortalApp === "function" ? findPortalApp(appKey) : null;
+  if (!app) { toast("门户卡不存在"); return; }
+  const isExt = app.kind === "external";
+  const selected = app.roles || [];
+  const roleCbs = _portalRoleCbs(selected);
+  /* 主题色板按「当前生效主题」预选中：已存 theme 优先，缺省回落板块默认（见 _portalThemeCells） */
+  const effTheme = !isExt && typeof getPortalTheme === "function" ? getPortalTheme(app) : null;
+  __paThemeTouched = false;
+  __paCustomHex = "";
+  const themeRow = (!isExt && typeof PORTAL_THEMES !== "undefined")
+    ? formRow("主题配色", `<div class="pt-grid">${_portalThemeCells(app.theme || "", effTheme)}</div>`, false, "首页卡片与对应子系统窗口的主题色；点「自定义」格里的色点即可直接取色，选「默认」按板块默认色（当前卡片未单独指定时即跟随板块）")
+    : "";
+  const targetRow = isExt
+    ? formRow("跳转链接", `<input id="paUrl" value="${(app.url || "").replace(/"/g, "&quot;")}" placeholder="https://example.com">`, true, "必须以 http:// 或 https:// 开头")
+    : formRow("指向板块", `<code>${app.mod || "-"}</code>${MODULES[app.mod] ? "（" + MODULES[app.mod].name + "）" : ""}`, false, "内部子系统的菜单结构在「子系统菜单」tab 中维护");
+  openModal(
+    modalContent(
+      `编辑门户卡 · ${_escape(app.name)}`,
+      `${formRow("名称", `<input id="paName" value="${_escape(app.name)}" maxlength="20">`, true)}
+       ${formRow("图标", `<input id="paIcon" value="${_escape(app.icon || "")}" maxlength="4">`, false, "一个 Emoji 字符")}
+       ${formRow("描述", `<textarea id="paDesc" rows="2" maxlength="80">${_escape(app.desc || "")}</textarea>`, false, "展示在门户卡片描述行，最长 80 字")}
+       ${formRow("运行状态", `<select id="paStatus"><option value="active"${app.status !== "maintenance" ? " selected" : ""}>正常</option><option value="maintenance"${app.status === "maintenance" ? " selected" : ""}>维护中</option></select>`, false)}
+       ${targetRow}
+       ${themeRow}
+       ${formRow("可见角色", `<div class="fav-manage-items">${roleCbs}</div>`, false, "不勾选 = 全部角色可见；内部卡还受角色权限配置中的模块授权约束")}`,
+      `${btn("取消", "gray", "closeModal()")} ${btn("保存修改", "", `submitEditPortalApp('${appKey}')`)}`,
+    ),
+    "600px",
+  );
+}
+
+/** 提交门户卡编辑 */
+function submitEditPortalApp(appKey) {
+  if (!window.currentCanAction("sys", "sysMenu", "edit")) { toast("您没有编辑门户卡的权限"); closeModal(); return; }
+  const name = document.getElementById("paName").value.trim();
+  if (!name) { toast("门户卡名称不能为空"); return; }
+  const roles = Array.from(document.querySelectorAll(".portal-role-cb:checked")).map((cb) => cb.value);
+  const patch = {
+    name,
+    icon: document.getElementById("paIcon").value.trim(),
+    desc: document.getElementById("paDesc").value,
+    status: document.getElementById("paStatus").value,
+    roles,
+  };
+  const urlEl = document.getElementById("paUrl");
+  if (urlEl) patch.url = urlEl.value.trim();
+  /* 主题配色：仅在用户动过色板时写入——未改动则保留原值（含「跟随板块默认」的空值），
+     避免只改名 / 改描述就顺手把主题钉成某个预设。写入时：「自定义」取格内取色器色值，
+     「默认」= 清除 theme 回落板块默认 */
+  if (__paThemeTouched) {
+    const themeEl = document.querySelector('input[name="paTheme"]:checked');
+    if (themeEl) {
+      if (themeEl.value === "__custom__") {
+        const colorEl = document.getElementById("paThemeColor");
+        const hex = String((colorEl && colorEl.value) || __paCustomHex || "").toLowerCase();
+        if (!/^#[0-9a-fA-F]{6}$/.test(hex)) { toast("请先在「自定义」格里选一个主题色"); return; }
+        patch.theme = hex;
+      } else {
+        patch.theme = themeEl.value;
+      }
+    }
+  }
+  const ok = window.updatePortalApp(appKey, patch);
+  if (!ok) { toast("保存失败：外链地址必须以 http:// 或 https:// 开头"); return; }
+  closeModal();
+  toast("已保存门户卡配置");
+  replaceView();
+}
+
+/** 打开新增外部系统弹窗（原「只能维护种子」现支持直接新增外链卡） */
+function openAddPortalApp() {
+  if (!window.currentCanAction("sys", "sysMenu", "add")) { toast("您没有新增门户卡的权限"); return; }
+  const roleCbs = _portalRoleCbs([]);
+  openModal(
+    modalContent(
+      "新增外部系统",
+      `${formRow("名称", `<input id="paName" maxlength="20" placeholder="如：项目管理系统">`, true)}
+       ${formRow("图标", `<input id="paIcon" maxlength="4" placeholder="🔗">`, false, "一个 Emoji 字符，默认 🔗")}
+       ${formRow("跳转链接", `<input id="paUrl" placeholder="https://example.com">`, true, "必须以 http:// 或 https:// 开头")}
+       ${formRow("描述", `<textarea id="paDesc" rows="2" maxlength="80" placeholder="一句话说明该系统用途"></textarea>`, false, "展示在门户卡片描述行，最长 80 字")}
+       ${formRow("运行状态", `<select id="paStatus"><option value="active" selected>正常</option><option value="maintenance">维护中</option></select>`, false)}
+       ${formRow("可见角色", `<div class="fav-manage-items">${roleCbs}</div>`, false, "不勾选 = 全部角色可见")}`,
+      `${btn("取消", "gray", "closeModal()")} ${btn("新增", "", "submitAddPortalApp()")}`,
+    ),
+    "600px",
+  );
+}
+
+/** 提交新增外部系统 */
+function submitAddPortalApp() {
+  if (!window.currentCanAction("sys", "sysMenu", "add")) { toast("您没有新增门户卡的权限"); closeModal(); return; }
+  const name = document.getElementById("paName").value.trim();
+  if (!name) { toast("门户卡名称不能为空"); return; }
+  const url = document.getElementById("paUrl").value.trim();
+  if (!/^https?:\/\//i.test(url)) { toast("跳转链接必须以 http:// 或 https:// 开头"); return; }
+  const roles = Array.from(document.querySelectorAll(".portal-role-cb:checked")).map((cb) => cb.value);
+  const key = window.createPortalApp({
+    name,
+    icon: document.getElementById("paIcon").value.trim(),
+    url,
+    desc: document.getElementById("paDesc").value,
+    status: document.getElementById("paStatus").value,
+    roles,
+  });
+  if (!key) { toast("新增失败：请检查名称与链接"); return; }
+  closeModal();
+  toast("已新增外部系统，门户即时展示");
+  replaceView();
+}
+
+/** 上架 / 下架门户卡 */
+function togglePortalApp(appKey) {
+  if (!window.currentCanAction("sys", "sysMenu", "edit")) { toast("您没有修改门户配置的权限"); return; }
+  const enabled = window.togglePortalAppEnabled(appKey);
+  if (enabled === null) { toast("门户卡不存在"); return; }
+  toast(enabled ? "已上架，门户将展示该卡片" : "已下架，门户不再展示该卡片");
+  replaceView();
+}
+
+/** 上移 / 下移门户卡 */
+function movePortalAppBtn(appKey, dir) {
+  if (!window.currentCanAction("sys", "sysMenu", "edit")) { toast("您没有修改门户配置的权限"); return; }
+  if (!window.movePortalApp(appKey, dir)) return;
+  replaceView();
 }
 
 /** 切换模块卡片展开/收起 */

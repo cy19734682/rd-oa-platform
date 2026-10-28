@@ -615,16 +615,6 @@ label {
   flex-direction: column;
   overflow: hidden;
 }
-.crumb {
-  height: 46px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--sub);
-}
 .crumb b {
   color: var(--title);
 }
@@ -727,6 +717,10 @@ label {
   font-size: 13px;
   color: var(--sub);
 }
+/* v5.9 首页公告条：左右内边距 290px，与首页主区列对齐（其余页面面包屑保持 20px） */
+.crumb.is-home {
+  padding: 0 290px;
+}
 .crumb b {
   color: var(--title);
 }
@@ -755,56 +749,54 @@ label {
   font-size: 12px;
   margin-left: 2px;
 }
-/* 工作台欢迎语：轻量徽章条——姓名首字头像 + 文本组，无卡片背景，文字用深色变量 */
-.portal-hello {
+/* crumb 公告条（v5.1：主系统首页面包屑行只保留公告，无边框无背景，去掉发布人/时间；
+ * v5.9 去掉「查看更多」，只留最新一条，靠行首展示） */
+.crumb-notice {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 2px 2px 0;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
 }
-.portal-hello-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: #e8f3ff;
-  color: #1677ff;
+.crumb-notice-main {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
+  gap: 8px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.crumb-notice-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff4d4f;
   flex-shrink: 0;
-  user-select: none;
 }
-.portal-hello-text {
+.crumb-notice-tag {
+  color: #0c447c;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.crumb-notice-title {
+  color: var(--title);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 0;
 }
-.portal-hello-hi {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--title);
+.crumb-notice-title:hover {
+  color: var(--btBlue);
+  text-decoration: underline;
 }
-.portal-hello-sub {
-  font-size: 13px;
-  color: var(--sub);
-  margin-top: 4px;
-  max-width: 560px;
-}
-
 /* 板块分区标题 */
 .portal-section-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--title);
   margin: 22px 0 12px;
-}
-.portal-section-sub {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--sub);
-  margin-left: 8px;
 }
 
 /* 磁贴网格（板块磁贴 / 子系统磁贴共用） */
@@ -826,6 +818,8 @@ label {
   transition: 0.15s;
   overflow: hidden;
 }
+/* 磁贴左侧主题竖线：跟随当前窗口主题色（--btBlue；子系统窗口由门户配置的
+ * 主题配色经 applySubsystemTheme 注入，主系统走全局默认蓝） */
 .portal-tile::before {
   content: "";
   position: absolute;
@@ -833,11 +827,11 @@ label {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--tc, #1677ff);
+  background: var(--btBlue);
 }
 .portal-tile:hover {
-  border-color: var(--tc, #1677ff);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: var(--btBlue);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--btBlue) 14%, transparent);
   transform: translateY(-2px);
 }
 .portal-tile-icon {
@@ -849,7 +843,8 @@ label {
   justify-content: center;
   font-size: 22px;
   flex-shrink: 0;
-  background: #f0f6ff;
+  /* 图标底座同主题色系（浅色底），跟随 --btBlue */
+  background: color-mix(in srgb, var(--btBlue) 8%, white);
 }
 .portal-tile-body {
   flex: 1;
@@ -938,49 +933,6 @@ label {
   text-decoration: underline;
 }
 
-/* 我的常用应用网格：列数由 JS 钳制在 6~8 后设置 --cols */
-.portal-grid-fav {
-  grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr));
-  gap: 16px;
-}
-/* 常用应用磁贴：竖排小卡——头部行（图标+名称）/ 第二行（板块名+外链标记）
-   8 列窄卡（约 205px）下横排结构会把名称挤换行，竖排后名称独占整行不再被徽章挤压 */
-.portal-fav-tile {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-}
-.portal-fav-tile .portal-tile-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.portal-fav-tile .portal-tile-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  font-size: 19px;
-}
-.portal-fav-tile .portal-tile-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-.portal-fav-tile .portal-tile-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 12px;
-}
-.portal-fav-tile .portal-tile-meta .tag.ext {
-  margin-left: auto;
-  flex-shrink: 0;
-}
 /* 板块首页 / 三级分组页的子系统网格：列数由 JS 钳制在 6~8 后设置 --cols */
 .portal-grid-subs {
   grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr));
@@ -1026,6 +978,184 @@ label {
 .portal-sub-tile .portal-tile-meta {
   margin-top: 8px;
   font-size: 12px;
+}
+
+/* ========== 子系统首页（工作台式，v6.5） ==========
+ * 定位条 → 数据摘要 → 功能入口卡栅格。
+ * v6.3 按反馈精简：右栏（我的待办 / 通知公告）、定位条的新增与搜索按钮、
+ * 卡片内的最近内容摘要均已移除，页面回到「一条主线」的单列结构。
+ * v6.4：功能入口卡改用主系统首页业务子系统卡的视觉体系（纵向卡 / 40px 渐变
+ * 图标底座 / 细线分隔 / 右下进入），数据摘要不再带计量单位。
+ * v6.5：卡片去掉「编码 / 类型」属性格，胶囊与「进入」合并为一条细线底栏；
+ * 栅格统一 6 列，窄屏按断点降为 4 / 3 / 2 / 1 列。
+ * 配色全部由 --btBlue 派生，四个子系统窗口经 applySubsystemTheme 注入变量后各自换肤。 */
+.sy-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sy-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--btBlue) 7%, #fff);
+  border: 1px solid color-mix(in srgb, var(--btBlue) 16%, #fff);
+}
+.sy-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.sy-hero-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--btBlue);
+  color: #fff;
+}
+.sy-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--title);
+}
+.sy-hero-tag {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 2px 8px;
+  border-radius: 9px;
+  color: var(--btBlue);
+  background: color-mix(in srgb, var(--btBlue) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--btBlue) 25%, #fff);
+}
+.sy-hero-desc {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--sub);
+}
+
+/* 数据摘要：自适应列，2 项时自动铺满（项目管理子系统即 2 项） */
+.sy-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.sy-kpi {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.sy-kpi-label {
+  font-size: 12px;
+  color: var(--sub);
+}
+.sy-kpi-value {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--title);
+  font-variant-numeric: tabular-nums;
+}
+.sy-kpi-hint {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sy-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--title);
+  margin-bottom: -4px;
+}
+/* 功能入口卡栅格：与主系统首页子系统卡同一套观感，列数由 --sy-cols 指定
+   （v6.5 起统一 6 列，入口不足 6 个也保持 6 列 —— 卡片宽度一致、左侧对齐） */
+.sy-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--sy-cols, 6), minmax(0, 1fr));
+  gap: 18px;
+}
+/* 卡片本体复用主系统首页子系统卡的 .sub-card 系（白卡 / 圆角 / 阴影 / hover 一致），
+   只覆盖三处：
+   1) 胶囊：主系统表示内部/外部系统，这里表示子项数 → 改走子系统主题色
+   2) 描述：主系统给长文案预留两行高，入口描述普遍一行，收掉固定行高
+   3) 底栏：胶囊与「进入 →」合到一条细线底栏，替代主系统的三格属性区
+   外链卡胶囊回落中性灰，与虚线描边呼应 */
+.sy-card .sub-card-pill {
+  color: var(--btBlue);
+  border-color: color-mix(in srgb, var(--btBlue) 35%, #fff);
+  background: color-mix(in srgb, var(--btBlue) 7%, #fff);
+}
+.sy-card.ext .sub-card-pill {
+  color: #5f5e5a;
+  border-color: #b4b2a9;
+  background: #f1efe8;
+}
+.sy-card .sub-card-desc {
+  min-height: 0;
+  margin-bottom: 10px;
+}
+/* 卡底栏：左侧子项数胶囊 / 右侧进入，顶部细线与主系统属性区同款分隔节奏 */
+.sy-card-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f2f5;
+}
+.sy-card .sub-card-enter {
+  margin-top: 0;
+}
+@media (max-width: 1280px) {
+  .sy-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1180px) {
+  .sy-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 980px) {
+  .sy-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .sy-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .sy-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sy-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sy-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* 待办列表 */
@@ -1730,6 +1860,36 @@ tr.locked td {
 .pc-readonly-lock{font-size:13px;color:var(--sub);line-height:32px}
 /* 权限配置空状态（当前角色无任何模块权限时） */
 .perm-empty{text-align:center;padding:48px 20px;color:var(--sub);font-size:13px;border:1px dashed var(--border);border-radius:6px;background:#fafbfc}
+/* ---------- 菜单管理：双 tab（门户配置 / 子系统菜单） ---------- */
+.sys-menu-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.sys-menu-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--sub);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: -1px;
+  transition: 0.15s;
+  user-select: none;
+  background: transparent;
+}
+.sys-menu-tab:hover {
+  color: var(--btBlue);
+}
+.sys-menu-tab.on {
+  color: var(--primary);
+  font-weight: 600;
+  background: #fff;
+  border-color: var(--border);
+  border-bottom-color: #fff;
+}
 /* ---------- �˵����� ---------- */
 .menu-list {
   display: flex;
@@ -2522,139 +2682,11 @@ tr.locked td {
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* ========== 工作台面板（我的待办 / 通知公告） ========== */
-.portal-panel-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 18px;
-}
-.portal-panel {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-.portal-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
-}
-.portal-panel-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--title);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.portal-panel-badge {
-  background: #fff1f0;
-  color: var(--error);
-  border: 1px solid #ffa39e;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: 999px;
-  padding: 1px 8px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.portal-panel-body {
-  padding: 8px 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-.portal-panel-empty {
-  padding: 28px 12px;
-  text-align: center;
-  color: var(--sub);
-  font-size: 13px;
-}
-.portal-todo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.15s;
-  border: 1px solid transparent;
-}
-.portal-todo:hover {
-  background: #f5f7fa;
-  border-color: var(--border);
-}
-.portal-notice {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.15s;
-  border: 1px solid transparent;
-}
-.portal-notice:hover {
-  background: #f5f7fa;
-  border-color: var(--border);
-}
-.portal-notice-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--error);
-  flex-shrink: 0;
-}
-.portal-notice-body {
-  flex: 1;
-  min-width: 0;
-}
-.portal-notice-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--title);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.portal-notice-meta {
-  font-size: 12px;
-  color: var(--sub);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.portal-notice-arrow {
-  color: var(--sub);
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
 /* 分区标题右侧操作（如常用应用「管理」） */
 .portal-section-title {
   display: flex;
   align-items: center;
   font-size: 18px;
-}
-.portal-section-act {
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--btBlue);
-  cursor: pointer;
-}
-.portal-section-act:hover {
-  text-decoration: underline;
 }
 
 /* ========== 全局搜索结果页 ========== */
@@ -2792,7 +2824,7 @@ tr.locked td {
 }
 .fav-manage-items {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
   gap: 8px;
 }
 .fav-manage-item {
@@ -2808,6 +2840,17 @@ tr.locked td {
 .fav-manage-item:hover {
   background: #f5f7fa;
 }
+/* ⚠ 特异性陷阱：.form-control input（0-1-1）会把弹窗内所有 input 拉伸到 100% 宽，
+ * 导致复选框/单选框撑爆 flex 行、文字被挤到第二行。此处用 .fav-manage-item
+ * input[type=checkbox]（0-2-1）抬特异性夺回尺寸，并统一主题色与垂直居中。 */
+.fav-manage-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--btBlue);
+  cursor: pointer;
+}
 .fav-manage-icon {
   font-size: 15px;
 }
@@ -2817,13 +2860,628 @@ tr.locked td {
   margin-left: 2px;
 }
 
+/* ========== 门户卡主题色板（菜单管理 → 门户配置 → 编辑弹窗） ========== */
+.pt-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.pt-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.pt-cell:hover {
+  border-color: var(--btBlue);
+}
+.pt-cell.on {
+  border-color: var(--btBlue);
+  background: #f0f7ff;
+}
+/* 自定义主题格：色点本身就是取色器（点格子直接取色，不再另起一行） */
+.pt-cell > input[type="radio"] {
+  display: none;
+}
+.pt-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+.pt-cell .pt-color {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+}
+.pt-cell .pt-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.pt-cell .pt-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.pt-cell .pt-color::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.pt-cell.on .pt-dot {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 0 2px #fff, 0 0 0 4px var(--btBlue);
+}
+.pt-name {
+  font-size: 11px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+.pt-cell.on .pt-name {
+  color: var(--btBlue);
+  font-weight: 500;
+}
+
 /* ========== 门户响应式补充 ========== */
 @media (max-width: 960px) {
-  .portal-panel-row {
-    grid-template-columns: 1fr;
-  }
   .h-search {
     max-width: 220px;
     margin-left: 12px;
   }
+}
+
+/* ========== 主系统门户 · 子系统入口（参考展会智能体卡片网格，浅色化） ========== */
+/* ========== 首页左侧栏布局（v3）：侧栏随身信息 + 主区系统入口 ========== */
+.portal-home {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+/* 侧栏：定宽 280px + sticky 常驻（.content 为滚动容器），高度撑满可用区域
+ * （100vh - 64 顶栏 - 46 面包屑 - 36 内容 padding），过高时栏内自滚动
+ * v4：浅蓝灰独立底色 + 圆角描边，与主区（页面底 + 白卡）形成视觉区分 */
+.portal-side {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: calc(100vh - 146px);
+  overflow-y: auto;
+  background: #eef2f9;
+  border: 1px solid #dfe6f0;
+  border-radius: 12px;
+  padding: 12px;
+}
+.portal-main-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 用户卡：渐变头像 + 姓名/工号/角色（v6.6 起为纯展示卡片，不可点击，无 hover 反馈） */
+.portal-side-user {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.portal-side-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--iconBlue), var(--primary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 500;
+  flex-shrink: 0;
+  user-select: none;
+}
+.portal-side-user-info {
+  min-width: 0;
+  flex: 1;
+}
+.portal-side-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--title);
+}
+.portal-side-user-meta {
+  font-size: 12px;
+  color: var(--sub);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 问候区：问候语 + 每日文案 + 日期（用户卡下方，无卡片背景） */
+.portal-side-hello {
+  padding: 0 2px;
+  margin-top: -4px;
+}
+.portal-side-greeting {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--title);
+}
+.portal-side-motto {
+  font-size: 11px;
+  color: var(--sub);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+.portal-side-date {
+  font-size: 11px;
+  color: var(--sub);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+/* 用户卡日期进度小字（v5.2：本周/今年/距月末，纯计算） */
+.portal-side-dateprog {
+  font-size: 11px;
+  color: var(--sub);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 侧栏待办摘要行（v5.2：白卡紧凑行，红底数字 pill，点击弹铃铛面板） */
+.portal-side-td {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.portal-side-td:hover {
+  border-color: var(--btBlue);
+}
+.portal-side-td-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--title);
+  white-space: nowrap;
+}
+.portal-side-td-num {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: #ff4d4f;
+  border-radius: 999px;
+  padding: 1px 10px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.portal-side-td-go {
+  color: #bfbfbf;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.portal-side-td.zero {
+  cursor: default;
+}
+.portal-side-td.zero:hover {
+  border-color: var(--border);
+}
+.portal-side-td-none {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--sub);
+}
+
+/* 侧栏最近访问行（v5.2：图标 + 名称 + 箭头，hover 高亮，点击新窗口落地） */
+.portal-side-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.portal-side-recent-row:hover {
+  background: #f5f8fd;
+}
+.portal-side-recent-row + .portal-side-recent-row {
+  border-top: 1px solid #f2f4f7;
+}
+.portal-side-recent-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #eef4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.portal-side-recent-name {
+  font-size: 12px;
+  color: var(--title);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+.portal-side-recent-go {
+  color: #bfbfbf;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* 侧栏通用块：白卡 + 标题行（徽标/操作）+ 列表 + 查看全部 */
+.portal-side-block {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.portal-side-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.portal-side-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--title);
+}
+.portal-side-act {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--btBlue);
+  cursor: pointer;
+}
+.portal-side-act:hover {
+  text-decoration: underline;
+}
+.portal-side-empty {
+  padding: 14px 0;
+  text-align: center;
+  color: var(--sub);
+  font-size: 12px;
+}
+
+/* 常用应用：3 列紧凑磁贴（外链卡名后带 ↗） */
+.portal-side-fav-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.portal-side-fav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.15s;
+  min-width: 0;
+}
+.portal-side-fav:hover {
+  border-color: var(--btBlue);
+  background: #f8fbff;
+}
+.portal-side-fav-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.portal-side-fav-name {
+  font-size: 11px;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.portal-side-fav-ext {
+  color: var(--sub);
+  font-size: 10px;
+  margin-left: 1px;
+}
+
+/* 系统管理入口（v5：原主区平台入口卡迁入侧栏，仅 sysAdmin 可见；白卡链接行） */
+.portal-side-link {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: 0.15s;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--title);
+}
+.portal-side-link:hover {
+  border-color: var(--btBlue);
+  color: var(--btBlue);
+}
+.portal-side-link .portal-side-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 0 8px;
+  line-height: 18px;
+  border: 1px solid #ffd591;
+  background: #fff7e6;
+  color: #d46b08;
+  flex-shrink: 0;
+}
+
+/* 窄屏降级：侧栏置顶为两列网格（用户卡与问候区通栏），超窄屏单列 */
+@media (max-width: 1200px) {
+  .portal-home {
+    flex-direction: column;
+  }
+  /* 纵向排列时父级 align-items:flex-start 会让主区收成内容宽（v6.1 一并修正） */
+  .portal-main-col {
+    width: 100%;
+  }
+  .portal-side {
+    width: 100%;
+    position: static;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .portal-side-user,
+  .portal-side-hello {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 720px) {
+  .portal-side {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portal-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.portal-hero-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--title);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.portal-hero-en {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--sub);
+  letter-spacing: 2px;
+}
+.portal-hero-desc {
+  font-size: 13px;
+  color: var(--sub);
+  margin-top: 6px;
+}
+
+/* 子系统卡网格：4 列自适应，间距 18px */
+.sub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+/* 子系统卡：白卡 + 1px 浅边框 + 12px 圆角 + 极淡投影（浅色玻璃质感近似） */
+.sub-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+.sub-card:hover {
+  border-color: var(--btBlue);
+  box-shadow: 0 4px 16px rgba(50, 130, 250, 0.1);
+  transform: translateY(-2px);
+}
+/* 内部卡悬停：投影跟随门户配置的主题色（--card-theme 由 _subAppCardHtml 注入） */
+.sub-card:not(.ext):hover {
+  border-color: var(--card-theme, var(--btBlue));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--card-theme, #1677ff) 16%, transparent);
+}
+.sub-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+/* 图标底座：40px 圆角 10px 蓝渐变底 + 白符号 */
+.sub-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--iconBlue), var(--primary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.sub-card-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--title);
+  flex: 1;
+}
+/* 类型胶囊：描边式弱底色 */
+.sub-card-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 9px;
+  border: 1px solid;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.sub-card-pill.internal {
+  color: #0f6e56;
+  border-color: #5dcaa5;
+  background: #e1f5ee;
+}
+.sub-card-pill.external {
+  color: #5f5e5a;
+  border-color: #b4b2a9;
+  background: #f1efe8;
+}
+.sub-card-desc {
+  font-size: 12px;
+  color: var(--sub);
+  line-height: 1.6;
+  min-height: 38px;
+  margin-bottom: 14px;
+}
+/* 字段网格：label 灰字在上 / 值亮字在下 */
+.sub-card-fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid #f0f2f5;
+  border-bottom: 1px solid #f0f2f5;
+  margin-bottom: 12px;
+}
+.sub-card-field span {
+  display: block;
+  font-size: 11px;
+  color: var(--sub);
+  margin-bottom: 4px;
+}
+.sub-card-field b {
+  font-size: 13px;
+  color: var(--title);
+  font-weight: 500;
+}
+/* 系统编码（门户卡 key）：等宽字体，与状态 / 类型区分 */
+.sub-card-field-code b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+}
+/* 操作链：右下文字按钮 */
+.sub-card-enter {
+  font-size: 12px;
+  color: var(--btBlue);
+  text-align: right;
+  margin-top: auto;
+}
+/* 外部系统卡：虚线描边 + 灰色图标底座，与内部卡区分 */
+.sub-card.ext {
+  border-style: dashed;
+}
+.sub-card.ext:hover {
+  border-color: #8a94a6;
+  box-shadow: 0 4px 16px rgba(95, 107, 132, 0.1);
+}
+.sub-card.ext .sub-card-icon {
+  background: linear-gradient(135deg, #8a94a6, #5f6b84);
+}
+.sub-card.ext .sub-card-enter {
+  color: #5f6e8a;
+}
+
+/* ========== 子系统壳：顶栏与主系统同构（v5.5） ==========
+ * 子系统顶栏 logo 为主系统同款 SVG + 子系统名称（静态写于各 subs/<key>.html 壳），
+ * 「← 返回主系统」按钮已移除，返回门户统一点击 Logo（backToPortal）。
+ * 壳态内容区视觉隔离：页面底微差（变量切换，组件结构不变） */
+body.in-subsystem {
+  --bg: #eef1f6;
+}
+body.in-subsystem .crumb {
+  background: #fff;
+}
+
+/* ========== 子系统窗口门控（未登录 / 无权限） ========== */
+#sub-gate {
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 24px;
+}
+.sub-gate-box {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 48px 56px;
+  text-align: center;
+  max-width: 460px;
+  box-shadow: 0 8px 28px rgba(23, 35, 61, 0.08);
+}
+.sub-gate-icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+.sub-gate-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--title);
+  margin-bottom: 8px;
+}
+.sub-gate-desc {
+  font-size: 13px;
+  color: var(--sub);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+.sub-gate-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }

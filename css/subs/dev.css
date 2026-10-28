@@ -1,0 +1,36 @@
+/* ========== 子系统独立样式 · 研发公共（dev） ==========
+ * 在 css/style.css 之后加载，覆写主题变量与局部组件，
+ * 使该子系统窗口拥有可感知的独立视觉身份（绿色系 · 轻盈底色）。
+ * 只做「变量 + 少量组件」级覆写，不复制整站样式。
+ */
+
+:root {
+  --primary: #389e0d;
+  --btBlue: #389e0d;
+  --iconBlue: #52c41a;
+  --headerBg: #237804;
+  --radius: 4px;
+}
+
+/* 子系统窗口底色微调（暖绿灰） */
+body.in-subsystem {
+  --bg: color-mix(in srgb, var(--btBlue) 5%, white);
+}
+
+/* 子系统首页磁贴：绿色悬停投影 */
+.portal-tile:hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+/* 页面主标题左侧主题短竖线 */
+.page-title {
+  border-left: 4px solid var(--primary);
+  padding-left: 10px;
+}
+
+/* 成功类标签与主题呼应 */
+.tag.g {
+  background: color-mix(in srgb, var(--btBlue) 7%, white);
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--btBlue) 28%, white);
+}
