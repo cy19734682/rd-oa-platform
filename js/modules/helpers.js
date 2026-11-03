@@ -80,6 +80,38 @@ function btnFullscreen() {
 }
 
 /**
+ * 表格列宽比例配置（v6.8）
+ * key = 表头数组 join("|")；value = 与表头等长的百分比数组（合计 100）。
+ * 未配置的表保持 table-layout:fixed 的均分行为。
+ * 依据：v6.8 审计发现全站 fixed 均分导致「描述/标题列被硬裁、编码/状态列过宽」，
+ *      且被裁单元格里若含 inline-block 子元素，text-overflow 不生效、看不到省略号。
+ */
+const TABLE_COL_RATIOS = {
+  /* 系统管理 */
+  "账号|姓名|部门小组|手机号码|角色|状态|操作": [9, 10, 22, 12, 14, 8, 25],
+  "部门编码|部门名称|操作": [16, 60, 24],
+  "角色编码|角色名称|门户可见卡片|操作": [14, 14, 44, 28],
+  "排序|门户卡|类型|状态|可见角色|描述|操作": [13, 19, 12, 7, 11, 16, 22],
+  "字典键|字典名称|描述|子项数|子项预览|操作": [14, 12, 20, 8, 22, 24],
+  "时间|人员|类型|动作|对象": [16, 10, 8, 30, 36],
+  "标题|类型|发布人|发布时间|置顶|状态|操作": [30, 8, 10, 12, 6, 10, 24],
+  /* 绩效管理 */
+  "考核类型|适用角色|模板名称|考核项|权重合计|状态|操作": [11, 11, 27, 9, 11, 11, 20],
+  "工号|姓名|角色|部门小组|考核状态|加权得分|等级|月度计划任务|操作": [8, 7, 9, 12, 9, 8, 7, 21, 19],
+};
+
+/**
+ * 按表头签名生成 colgroup（百分比列宽）
+ * @param {string[]} headers - 表头数组，签名需与 TABLE_COL_RATIOS 的 key 一致
+ * @returns {string} `<colgroup>…</colgroup>`；未配置或长度不符时返回空串
+ */
+function colgroup(headers) {
+  const ratio = TABLE_COL_RATIOS[headers.join("|")];
+  if (!ratio || ratio.length !== headers.length) return "";
+  return `<colgroup>${ratio.map((r) => `<col style="width:${r}%">`).join("")}</colgroup>`;
+}
+
+/**
  * 表格（含表头和行数据）
  * @param {string[]} headers - 表头数组
  * @param {Array} rows - 行数据数组
@@ -92,7 +124,9 @@ function table(headers, rows, rowFn, extraStyle = "", lastColWidth = 225) {
   const tbody = rows.map((row, i) => `<tr>${rowFn(row, i)}</tr>`).join("");
   const widthVal = typeof lastColWidth === "number" ? `${lastColWidth}px` : lastColWidth;
   const tableStyle = [`--last-col-width:${widthVal}`, extraStyle].filter(Boolean).join(";");
-  return `<table style="${tableStyle}"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+  const cg = colgroup(headers);
+  const cls = cg ? ' class="tbl-ratio"' : "";
+  return `<table${cls} style="${tableStyle}">${cg}<thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
 }
 
 /**

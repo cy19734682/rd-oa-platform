@@ -27,7 +27,7 @@ function openImportMonthlyTask(period) {
 }
 
 function downloadMonthlyTaskTemplate() {
-  if (typeof XLSX === "undefined") { toast("Excel 库未加载，无法下载模板"); return; }
+  if (typeof XLSX === "undefined") { toast("Excel 组件未就绪，请刷新页面后重试"); return; }
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([
     ["工号", "工作质量", "工作效率", "任务完成情况", "团队协作", "学习成长"],
@@ -39,7 +39,7 @@ function downloadMonthlyTaskTemplate() {
 
 function handleImportMonthlyTaskFile(file, period) {
   if (!file) return;
-  if (typeof XLSX === "undefined") { toast("Excel 解析库未加载，请检查网络连接"); return; }
+  if (typeof XLSX === "undefined") { toast("Excel 组件未就绪，请刷新页面后重试"); return; }
   const reader = new FileReader();
   reader.onload = function(e) {
     try {

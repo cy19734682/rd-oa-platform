@@ -1263,6 +1263,27 @@ td:last-child {
   white-space: normal;
   text-overflow: unset;
 }
+/* v6.8：按列宽比例配置的表（helpers.js 的 TABLE_COL_RATIOS 生成 colgroup 百分比），
+ * 末列交给 colgroup 决定，不再用 --last-col-width 的固定 px 抢占 */
+table.tbl-ratio th:last-child,
+table.tbl-ratio td:last-child {
+  width: auto;
+  min-width: 0;
+}
+/* v6.8：表格单元格内的长文本容器使用单行省略（作用于文本自身，避免整格硬裁无提示） */
+.cell-ell {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+/* v6.8：标签组等需要完整展示的内容允许换行，不用单行硬裁 */
+.cell-wrap {
+  white-space: normal;
+  text-overflow: unset;
+}
 tbody tr:hover {
   background: #f5f7fa;
 }
@@ -3166,10 +3187,12 @@ tr.locked td {
   font-size: 12px;
 }
 
-/* 常用应用：3 列紧凑磁贴（外链卡名后带 ↗） */
+/* 常用应用：2 列紧凑磁贴（外链卡名后带 ↗）
+ * v6.8：原 3 列时侧栏 280px 内每格仅 69px，6 字应用名（研发设计评审）被裁且 4 个应用排成 3+1；
+ *       改 2 列（每格 ~124px）后名称完整、数量为偶数时成行 */
 .portal-side-fav-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .portal-side-fav {
@@ -3267,6 +3290,25 @@ tr.locked td {
   .portal-side-user,
   .portal-side-hello {
     grid-column: 1 / -1;
+  }
+  /* v6.8：侧栏横向铺开后收窄每格，避免 2 列时磁贴被拉得过宽 */
+  .portal-side-fav-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  /* v6.8：宽度收紧时操作列内边距与按钮左右留白略缩，让 4 个按钮保持单行 */
+  table.tbl-ratio th:last-child,
+  table.tbl-ratio td:last-child {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  table.tbl-ratio td:last-child .btn.sm {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  table.tbl-ratio td:last-child .btn + .btn,
+  table.tbl-ratio td:last-child .btn + button,
+  table.tbl-ratio td:last-child button + .btn {
+    margin-left: 4px;
   }
 }
 @media (max-width: 720px) {

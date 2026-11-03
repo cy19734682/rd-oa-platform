@@ -276,7 +276,8 @@ function renderSysDept() {
     '',
   )}
   ${zone(`
-    <table class="tbl">
+    <table class="tbl tbl-ratio">
+      ${colgroup(TH.sysDept)}
       <thead><tr>${TH.sysDept.map(h => `<th>${h}</th>`).join("")}</tr></thead>
       <tbody>${rows || `<tr><td colspan="3" class="empty">暂无部门数据</td></tr>`}</tbody>
     </table>
@@ -446,7 +447,7 @@ function renderSysRole() {
         return `
         <td><code>${r.key}</code></td>
         <td>${r.name}</td>
-        <td>${portalCell}</td>
+        <td class="cell-wrap" title="${_escape(portalApps.map((a) => a.name).join(" / "))}">${portalCell}</td>
         <td>
           ${canEdit ? btn("权限配置", "ghost sm", `openPermConfigFor('${r.key}')`) : ""}
           ${canEdit ? btn("编辑", "ghost sm", `openEditRole('${r.key}')`) : ""}
@@ -644,14 +645,14 @@ function renderSysLog() {
   const rows = dictKeys.map((key) => {
     const info = meta[key];
     const items = window.getDict ? window.getDict(key) : [];
-    const preview = items.slice(0, 5).map((d) => tag(_escape(d), 'g')).join(' ')
-      + (items.length > 5 ? `<span class="muted small">…+${items.length - 5}</span>` : '');
+    const preview = items.slice(0, 3).map((d) => tag(_escape(d), 'g')).join(' ')
+      + (items.length > 3 ? `<span class="muted small">…+${items.length - 3}</span>` : '');
     return `<tr>
       <td><code>${_escape(key)}</code></td>
       <td><b>${_escape(info.label)}</b></td>
-      <td><span class="small muted">${_escape(info.desc)}</span></td>
+      <td><span class="small muted" title="${_escape(info.desc || "")}">${_escape(info.desc)}</span></td>
       <td>${tag(items.length + ' 项', items.length > 0 ? 'ok' : 'muted')}</td>
-      <td style="max-width:300px">${preview || '<span class="muted small">暂无</span>'}</td>
+      <td class="cell-wrap" title="${_escape(items.join(' / '))}">${preview || '<span class="muted small">暂无</span>'}</td>
       <td style="white-space:nowrap">
         ${btn('查看子项', 'sm', `openSysDictView('${key}')`)}
         ${canEdit ? btn('编辑', 'ghost sm', `openSysDictEditGroup('${key}')`) : ''}
@@ -666,7 +667,8 @@ function renderSysLog() {
     '',
   )}
   ${zone(
-    `<table class="tb">
+    `<table class="tb tbl-ratio">
+      ${colgroup(["字典键", "字典名称", "描述", "子项数", "子项预览", "操作"])}
       <thead><tr>
         <th>字典键</th><th>字典名称</th><th>描述</th><th>子项数</th><th>子项预览</th><th>操作</th>
       </tr></thead>
@@ -1000,7 +1002,7 @@ function _renderPortalConfigTab(canEdit, canAdd) {
           <td>${typeBadge}<div style="margin-top:4px">${target}</div></td>
           <td>${statusCell}</td>
           <td>${rolesCell}</td>
-          <td><span class="muted" style="display:inline-block;max-width:220px">${_escape(app.desc || "-")}</span></td>
+          <td><span class="muted cell-ell" title="${_escape(app.desc || "")}">${_escape(app.desc || "-")}</span></td>
           <td><span class="ms-actions">${actions}</span></td>`;
       }, "", 300)
     : '<div class="empty">暂无门户卡（种子为空）</div>';
@@ -1692,7 +1694,7 @@ function renderSysNotice() {
   const rows = notices.map((n) => {
     const typeName = (window.NOTICE_TYPES || {})[n.type] || n.type;
     return `<tr>
-      <td style="max-width:340px"><b>${_escape(n.title)}</b>${n.top ? ' <span class="tag warn">置顶</span>' : ''}</td>
+      <td title="${_escape(n.title)}"><b>${_escape(n.title)}</b>${n.top ? ' <span class="tag warn">置顶</span>' : ''}</td>
       <td>${tag(typeName, 'g')}</td>
       <td>${_escape(n.publisher || '-')}</td>
       <td>${_fmtDate(n.createdAt)}</td>
@@ -1712,7 +1714,8 @@ function renderSysNotice() {
     '',
   )}
   ${zone(
-    `<table class="tb">
+    `<table class="tb tbl-ratio">
+      ${colgroup(TH.sysNotice)}
       <thead><tr>
         ${TH.sysNotice.map((h) => `<th>${h}</th>`).join('')}
       </tr></thead>

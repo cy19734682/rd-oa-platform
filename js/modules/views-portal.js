@@ -100,7 +100,7 @@ function _searchCollect(q) {
       out.push({
         src: "std", id: s.id, icon: "📚", color: SEARCH_SOURCES.std.color,
         title: `${s.stdNo} ${s.nameCn}`,
-        meta: `${s.level || ""}${s.nature ? " / " + s.nature : ""} · ${s.status === "current" ? "现行" : s.status === "obsolete" ? "已作废" : s.status} · 实施 ${s.implDate || "-"}`,
+        meta: `${s.level || ""}${s.nature ? " / " + s.nature : ""} · ${STATUS[s.status] || s.status || "-"} · 实施 ${s.implDate || "-"}`,
         snippet: snip,
       });
     });

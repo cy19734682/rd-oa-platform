@@ -114,8 +114,8 @@
     <script src="js/modules/helpers.js"></script>
     <script src="js/modules/ui.js"></script>
 
-    <!-- SheetJS：用于 Excel 导入解析 -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- SheetJS：用于 Excel 导入解析（v6.7 本地化到 js/vendor，defer 不阻塞首屏） -->
+    <script src="js/vendor/xlsx.full.min.js" defer></script>
 
     <!-- 数据层：基座 + 业务模块（必须在 auth.js 之前，因为 auth.js 依赖 ROLES/MENUS/ALL_ACTIONS 等常量） -->
     <!-- 配置基座（原 config.js 已按内聚性拆分，加载顺序不可调整） -->
