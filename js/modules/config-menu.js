@@ -85,6 +85,24 @@ const DEFAULT_MODULES = {
         icon: "🚦",
         order: 2,
         actions: ["view", "export"],
+      },
+      /* v6.9：外部系统回挂子系统菜单——不再是门户级外链卡，
+         而是本子系统目录下的外链菜单项（type=external，点击新窗口打开） */
+      {
+        key: "pms",
+        name: "项目管理系统",
+        icon: "🗂️",
+        order: 3,
+        type: "external",
+        url: "http://192.168.1.19/devsuite/#home",
+      },
+      {
+        key: "board",
+        name: "项目看板",
+        icon: "📊",
+        order: 4,
+        type: "external",
+        url: "http://192.168.215.23/axshare/ppb/index.html",
       }],
   },
   dev: {
@@ -93,7 +111,16 @@ const DEFAULT_MODULES = {
     order: 3,
     subs: [
       { key: "stdHome", name: "标准库", icon: "📚", order: 1, actions: ["view", "export", "add", "edit", "delete"] },
-      { key: "ec", name: "经验案例库", icon: "💡", order: 2, actions: ["view", "add", "edit", "delete", "export", "admin"] }],
+      { key: "ec", name: "经验案例库", icon: "💡", order: 2, actions: ["view", "add", "edit", "delete", "export", "admin"] },
+      /* v6.9：外部系统回挂子系统菜单（原门户级外链卡 ext-auto） */
+      {
+        key: "sub-auto",
+        name: "自动化测试平台",
+        icon: "🤖",
+        order: 3,
+        type: "external",
+        url: "http://192.168.215.23/pd/uml/index.html",
+      }],
   },
   asset: {
     name: "过程资产",

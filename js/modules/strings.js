@@ -9,6 +9,8 @@ const PAGES = {
     title: '工作台',
     desc: '统一入口 · 统一账号 · 统一权限',
   },
+  /* v7.0：首页 hero 大标题 card 已下线，本组文案当前无渲染点；
+   * 保留作为平台名称 / 简介的唯一事实源（如后续放回侧栏或关于弹窗）。 */
   portal: {
     title: '研发 OA 平台',
     en: 'R&D OA PLATFORM',
@@ -176,7 +178,7 @@ const TH = {
   sysRole: ['角色编码', '角色名称', '门户可见卡片', '操作'],
   sysLog: ['时间', '人员', '类型', '动作', '对象'],
   sysNotice: ['标题', '类型', '发布人', '发布时间', '置顶', '状态', '操作'],
-  portalCfg: ['排序', '门户卡', '类型', '状态', '可见角色', '描述', '操作'],
+  portalCfg: ['排序', '门户卡', '指向板块', '状态', '可见角色', '描述', '操作'],
 };
 
 /* ---------- 状态标签 ---------- */
@@ -411,8 +413,9 @@ const NAV = {
   roleLabel: '角色：{name}',
   permConfig: '⚙️ 权限配置',
   logout: '切换角色 / 退出登录',
-  crumbHome: '<b>工作台</b>',
-  crumbPortal: '主系统',
+  /* v7.8：面包屑一级沿用「工作台」（用户要求，替代原「主系统」）；
+   * 原 crumbHome:'<b>工作台</b>' 是早期带标签的死键，已由本键取代，别再恢复 */
+  crumbPortal: '工作台',
   backToModule: '← 返回{module}',
   backToGroup: '← 返回{group}',
   backToPortal: '← 返回主系统',
@@ -425,10 +428,8 @@ const NAV = {
   /* 侧栏系统管理入口（v5：原主区平台入口卡迁入侧栏，仅 sysAdmin 可见） */
   sideSys: '⚙️ 系统管理',
   sideAdminTag: '管理员',
-  /* 侧栏待办摘要行（v5.2：紧凑摘要徽标，点击弹铃铛待办面板；非完整列表） */
-  sideTd: '⏳ 我的待办',
-  sideTdUnit: '条待办',
-  sideTdNone: '暂无待办',
+  /* 侧栏待办摘要行已下线（v7.5：与主区「我的待办」面板信息重复），
+   * sideTd / sideTdUnit / sideTdNone 三个键一并删除，别按旧版恢复。 */
   /* 侧栏最近访问（v5.2：自动记录最近进入的子系统，按账号隔离，最多 8 条） */
   sideRecent: '🕘 最近访问',
   sideRecentEmpty: '暂无访问记录',
@@ -457,8 +458,11 @@ const MODULE_DESC = {
 const SUB_DESC = {
   pdr: '研发设计方案提交、评审与归档',
   psr: '项目阶段里程碑评审跟踪',
+  pms: 'DevSuite 项目管理平台，SSO 免二次登录',
+  board: '项目进度看板（Axure 在线原型）',
   stdHome: '标准文档看板、检索与在线阅读',
   ec: '研发问题案例沉淀与三级审核',
+  'sub-auto': 'UI 自动化测试平台，用例编排与执行',
   'sub-spec': '结构设计、接口定义、编码风格等规范',
   'sub-tpl': '可复用文档模板，覆盖全角色',
   'sub-design': '统一视觉、组件、交互与布局规范',

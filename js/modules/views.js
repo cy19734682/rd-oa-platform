@@ -84,7 +84,10 @@ function _portalSubTile(modKey, sub, parentKey) {
   </div>`;
 }
 
-/** 收集当前用户的跨模块待办（按角色 + 模块权限），返回待办对象数组 */
+/** 收集当前用户的跨模块待办（按角色 + 模块权限），返回待办对象数组
+ *  字段：icon / mod / title / desc / color / onClick，以及
+ *  date（v7.3：来源单据的创建时间戳——首页待办面板据此展示创建日期；
+ *  聚合类待办〔如「停用账号 N 个」〕没有单一来源单据，不设该字段，面板自动省略日期列） */
 function _collectTodos() {
   const myId = window.CURR_ACCT_ID || "";
   const myName = window.CURR_ACCT_NAME || "";
@@ -110,6 +113,7 @@ function _collectTodos() {
         todos.push({
           icon: "📅",
           mod: "perf",
+          date: t.createdAt,
           title: `${label}考核 · ${t.period}`,
           desc: `${t.ownerName} · ${stage}`,
           color: "#1677ff",
@@ -126,6 +130,7 @@ function _collectTodos() {
         todos.push({
           icon: "✍️",
           mod: "perf",
+          date: t.createdAt,
           title: `待打分 · ${t.ownerName}`,
           desc: `${t.type === "monthly" ? "月度" : "年度"}考核 ${t.period}`,
           color: "#faad14",
@@ -142,6 +147,7 @@ function _collectTodos() {
         todos.push({
           icon: "✍️",
           mod: "perf",
+          date: t.createdAt,
           title: `待PM打分 · ${t.ownerName}`,
           desc: `${t.type === "monthly" ? "月度" : "年度"}考核 ${t.period}`,
           color: "#faad14",
@@ -158,6 +164,7 @@ function _collectTodos() {
         todos.push({
           icon: "🏆",
           mod: "perf",
+          date: t.createdAt,
           title: `待归档 · ${t.ownerName}`,
           desc: `${t.type === "monthly" ? "月度" : "年度"}考核 ${t.period}`,
           color: "#722ed1",
@@ -178,6 +185,7 @@ function _collectTodos() {
         todos.push({
           icon: "💡",
           mod: "dev",
+          date: c.createdAt,
           title: `案例${stage} · ${c.title}`,
           desc: `${c.shareName}（${c.shareDept || ""}）`,
           color: "#52c41a",
@@ -267,43 +275,56 @@ function showLoginTodoModal(force) {
  * （roles 过滤 + 内部卡模块权限 + 上架状态），避免双份实现漂移。
  * 首页构成（v5）：左侧栏 portal-side（用户卡 / 常用应用 / 系统管理〔仅
  * sysAdmin〕，紧凑渲染函数在 views-portal.js，经 window 守卫调用）
- * + 右侧主区 portal-main-col（hero 标题 → 业务子系统卡网格 → 外部系统卡网格）。
- * v5 起调整：crumb 去掉「主系统」一级只保留公告条（公告去掉发布人/时间）；
- * 操作说明书入口下线；系统管理由主区「平台入口」卡片区迁入侧栏。
- * v5.2 起侧栏扩充：用户卡加日期进度小字；新增待办摘要行（紧凑徽标，点击弹
- * 铃铛面板）与最近访问（自动记录，按账号隔离，最多 8 条展示 5 条）。
+ * + 右侧主区 portal-main-col（v7.2 起：业务子系统网格〔一行 4 个〕→ 公告 / 待办双栏）。
+ * v6.9：取消「业务子系统 / 外部系统」两段分区——外部系统（项目管理系统 / 项目看板 /
+ * 自动化测试平台）回挂到各自子系统的菜单里作为外链菜单项，首页只剩一层子系统入口。
+ * v7.0：hero 大标题卡下线；系统公告从 crumb 迁到主区顶部（v7.1 起为公告列表 _portalNoticeList）；
+ * 面包屑恢复常规单级「主系统」。
+ * v7.2：入口前置——子系统卡网格回到一行 4 个并置于主区最上方；其下为左右等宽双栏。
+ * v7.3：双栏左右互换（左「我的待办」右「系统公告」）——先给「要做什么」（可操作），
+ *       再给「要知道什么」（只读）；标题去图标、字号 22px、下边距 20px；卡片加高。
+ * v7.4：双栏改回 grid 等高（stretch），两块面板与上方子系统网格左右两端同宽、
+ *       上下两端齐平，作为一个整体与业务子系统区块对齐；页头去掉「共 N 条」计数。
+ * v7.5：侧栏「⏳ 我的待办」摘要行下线（与主区待办面板信息重复，只留主区面板）；
+ *       标题 + 卡片网格收进 .portal-main-block，主区改 flex 纵向、与侧栏等高。
+ * v7.6：主区去掉两端对齐（space-between），子项按 gap 20px 自然排列；
+ *       子系统卡 min-height 200 → 195px。
+ * v5 起调整：操作说明书入口下线；系统管理由主区「平台入口」卡片区迁入侧栏。
+ * v5.2 起侧栏扩充：用户卡加日期进度小字、最近访问（自动记录，按账号隔离，最多
+ * 8 条展示 5 条）；当时的待办摘要行已于 v7.5 删除。
  */
 
-/** 单张子系统卡（内部卡新窗口打开独立子系统页；外部卡新窗口打开外链）
- * 内部卡使用门户配置的主题配色（theme，portal-config 维护；缺省回落默认色）
- * v6.0：内部卡首个字段由「子系统 N 个」改为「编码」（取门户卡 key，即 subs/<key>.html 的文件名） */
+/** 单张子系统卡（新窗口打开独立子系统页）
+ * v6.0：首个字段由「子系统 N 个」改为「编码」（取门户卡 key，即 subs/<key>.html 的文件名）
+ * v6.9：门户不再区分内部 / 外部系统（外部链接回挂到各子系统菜单里作为外链菜单项），
+ *       卡片去掉「内部系统」胶囊与「类型」字段。
+ * v7.0：信息重构 + 视觉强化——
+ *       ① 正文只留「名称 + 描述」这类业务信息（v7.1 起去掉「N 个功能入口」计数）；
+ *       ② 编码降级为名称下方 11px 等宽小字，状态收为右上角角标（正常 / 维护中）；
+ *       ③ 实心主题渐变图标，卡片顶部悬停淡入主题色细带、投影跟随主题色（v7.2 图标 46px）。
+ *       注：子系统首页卡（_shCardHtml）沿用同一批 .sub-card-* 类名，视觉覆盖
+ *       一律限定在 .portal-main-col 作用域内，避免串味。
+ */
 function _subAppCardHtml(app) {
-  const isExt = app.kind === "external";
   const mod = app.mod || "";
-  const statusText = (typeof _portalStatusText === "function") ? _portalStatusText(app.status) : "正常";
-  const theme = (!isExt && typeof getPortalTheme === "function") ? getPortalTheme(app) : null;
+  const theme = (typeof getPortalTheme === "function") ? getPortalTheme(app) : null;
   const tc = theme ? theme.base : "";
-  const iconStyle = tc ? ` style="background:${tc}1f;color:${tc}"` : "";
-  const pill = isExt
-    ? '<span class="sub-card-pill external">外部系统</span>'
-    : `<span class="sub-card-pill internal" style="color:${tc || "#0f6e56"};border-color:${tc ? tc + "66" : "#5dcaa5"};background:${tc ? tc + "14" : "#e1f5ee"}">内部系统</span>`;
-  const fields = isExt
-    ? [["类型", "外部系统"], ["打开方式", "新窗口"], ["状态", statusText]]
-    : [["编码", app.key || "-", "sub-card-field-code"], ["类型", "内部系统"], ["状态", statusText]];
-  const onClick = isExt
-    ? `window.open('${app.url}', '_blank')`
-    : `openSubsystem('${mod}')`;
-  const enterStyle = tc ? ` style="color:${tc}"` : "";
+  const statusText = (typeof _portalStatusText === "function") ? _portalStatusText(app.status) : "正常";
+  const statusCls = app.status === "maintenance" ? "maintenance" : "normal";
   const cardStyle = tc ? ` style="--card-theme:${tc}"` : "";
-  return `<div class="sub-card${isExt ? " ext" : ""}"${cardStyle} onclick="${onClick}">
+  return `<div class="sub-card"${cardStyle} onclick="openSubsystem('${mod}')">
     <div class="sub-card-head">
-      <div class="sub-card-icon"${iconStyle}>${app.icon || "📦"}</div>
-      <div class="sub-card-name">${_escape(app.name)}</div>
-      ${pill}
+      <div class="sub-card-icon">${app.icon || "📦"}</div>
+      <div class="sub-card-title">
+        <div class="sub-card-name">${_escape(app.name)}</div>
+        <div class="sub-card-code">${_escape(app.key || "-")}</div>
+      </div>
+      <span class="sub-card-status ${statusCls}">${_escape(statusText)}</span>
     </div>
     <div class="sub-card-desc">${_escape(app.desc || "")}</div>
-    <div class="sub-card-fields">${fields.map(([k, v, cls]) => `<div class="sub-card-field${cls ? " " + cls : ""}"><span>${k}</span><b>${_escape(String(v))}</b></div>`).join("")}</div>
-    <div class="sub-card-enter"${enterStyle}>${isExt ? "新窗口打开 ↗" : "进入系统 →"}</div>
+    <div class="sub-card-foot">
+      <span class="sub-card-enter">进入系统 →</span>
+    </div>
   </div>`;
 }
 
@@ -335,36 +356,37 @@ function _todoOnClick(appKey, viewKey, modalJs) {
 function renderHome() {
   const apps = (typeof getPortalApps === "function" ? getPortalApps() : [])
     .filter(_portalAppAllowed);
-  const internalApps = apps.filter((a) => a.kind !== "external");
-  const externalApps = apps.filter((a) => a.kind === "external");
   const cards = (list) => list.map(_subAppCardHtml).join("");
-  /* 左侧栏：用户卡（含日期进度）+ 待办摘要行 + 常用应用 + 最近访问 + 系统管理
+  /* 左侧栏：用户卡（含日期进度）+ 常用应用 + 最近访问 + 系统管理
  * （仅 sysAdmin；v5 起由主区平台入口迁入侧栏；渲染函数在 views-portal.js，
- * 经 window 守卫调用） */
+ * 经 window 守卫调用）。v7.5：待办摘要行已删（主区有完整待办面板）。 */
   const side = `
     ${window._portalSideUser ? _portalSideUser() : ""}
-    ${window._portalSideTd ? _portalSideTd() : ""}
     ${window._portalSideFav ? _portalSideFav() : ""}
     ${window._portalSideRecent ? _portalSideRecent() : ""}
     ${window._portalSideSys ? _portalSideSys() : ""}`;
+  /* v6.9：不再分「业务子系统 / 外部系统」两段——外部系统已回挂到各子系统菜单，
+     首页只有一层入口（子系统卡），避免同一批入口在页面上出现两种身份。
+     v7.0：hero 标题卡下线（品牌信息在顶栏 Logo 已足够）。
+     v7.2：主区顺序改为「业务子系统（一行 4 个）→ 公告 / 待办双栏」——
+           入口是首页第一诉求，先给入口再给信息；下方左公告右待办各占一半宽，
+           对应「要知道什么」与「要做什么」，谁为空谁不渲染（:only-child 独占整行）。 */
+  const notice = window._portalNoticeList ? _portalNoticeList() : "";
+  const todoPanel = window._portalTodoPanel ? _portalTodoPanel() : "";
+  /* v7.5：标题与卡片网格包进 .portal-main-block 作为上半整块；.portal-main-col 改
+   * flex 纵向，容器高度与左侧栏（calc(100vh - 146px)）由 .portal-home 的 stretch 拉齐。
+   * v7.6：主区去掉 space-between，两块子项按 gap 20px 自然排列（不再两端对齐）。 */
   const body = `
   <div class="portal-home">
     <aside class="portal-side">${side}</aside>
     <div class="portal-main-col">
-      <div class="portal-hero">
-        <div class="portal-hero-text">
-          <div class="portal-hero-title">${PAGES.portal.title}<span class="portal-hero-en">${_escape(PAGES.portal.en)}</span></div>
-          <div class="portal-hero-desc">${PAGES.portal.desc}</div>
-        </div>
+      <div class="portal-main-block">
+        ${apps.length
+          ? `<div class="portal-section-title">业务子系统<span class="portal-section-count">${apps.length} 个</span></div>
+             <div class="sub-grid">${cards(apps)}</div>`
+          : '<div class="empty" style="margin-top:16px">🔒 暂无可访问的子系统，请联系管理员开通权限</div>'}
       </div>
-      ${internalApps.length
-        ? `<div class="portal-section-title">🚪 业务子系统</div>
-           <div class="sub-grid">${cards(internalApps)}</div>`
-        : '<div class="empty" style="margin-top:16px">🔒 暂无可访问的子系统，请联系管理员开通权限</div>'}
-      ${externalApps.length
-        ? `<div class="portal-section-title">🔗 外部系统</div>
-           <div class="sub-grid">${cards(externalApps)}</div>`
-        : ""}
+      ${(notice || todoPanel) ? `<div class="portal-split">${todoPanel}${notice}</div>` : ""}
     </div>
   </div>`;
   return body;
@@ -497,13 +519,15 @@ function _shCardHtml(mk, sub) {
   const pill = isExt
     ? '<span class="sub-card-pill external">外部链接</span>'
     : (children.length ? `<span class="sub-card-pill">${children.length} 个子项</span>` : "<span></span>");
+  /* v6.9：外链入口的底栏文案改为「前往 ↗」，与站内页面的「进入 →」区分开 */
+  const enterText = isExt ? "前往 ↗" : `进入${sub.action ? "办理" : ""} →`;
   return `<div class="sub-card sy-card${isExt ? " ext" : ""}" onclick="${onClick}">
     <div class="sub-card-head">
       <div class="sub-card-icon">${sub.icon || "📄"}</div>
       <div class="sub-card-name">${_escape(sub.name)}</div>
     </div>
     <div class="sub-card-desc">${_escape(desc || "本子系统的功能入口")}</div>
-    <div class="sy-card-foot">${pill}<span class="sub-card-enter">进入${sub.action ? "办理" : ""} →</span></div>
+    <div class="sy-card-foot">${pill}<span class="sub-card-enter">${enterText}</span></div>
   </div>`;
 }
 

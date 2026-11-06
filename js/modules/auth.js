@@ -542,7 +542,9 @@ function _renderPermsLevel(subsArr, permsSubs, path, depth, disAttr) {
       const cbClass = `pc-tree-cb pc-level-${depth}`;
       const cb = `<input type="checkbox" class="${cbClass}" data-path="${dataPath}" ${checked ? "checked" : ""} ${indeterminate ? "indeterminate" : ""} ${disAttr}>`;
       const icon = `<span class="pc-ic pc-ic-${depth}">${s.icon || "📄"}</span>`;
-      const label = `<span class="pc-label">${s.name}</span>`;
+      /* v6.9：外部系统回挂为菜单项后，权限树里也标出「外链」，避免看起来像站内页面 */
+      const extBadge = s.type === "external" ? '<span class="tag ext">外链</span>' : "";
+      const label = `<span class="pc-label">${s.name}</span>${extBadge}`;
       const grantedActions = _getPermEntryActions(permsEntry, declaredActions);
       // 只有内部菜单的叶子节点才显示业务权限行，外部系统和有子菜单的父级目录不显示
       const showActions = s.type !== "external" && childCount === 0;

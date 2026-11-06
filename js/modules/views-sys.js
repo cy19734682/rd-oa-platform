@@ -887,9 +887,10 @@ function renderSysMenu() {
   const canDel = window.currentCanAction("sys", "sysMenu", "delete");
   const header = pageHeader(PAGES.sysMenu ? PAGES.sysMenu.title : "菜单管理", PAGES.sysMenu ? PAGES.sysMenu.desc : "管理系统的菜单模块和子菜单，修改后角色权限配置将自动同步");
   const tabs = _sysMenuTabs();
-  /* 门户配置 tab：子系统上架 / 排序 / 元数据 / 主题配色 / 可见角色 / 新增外部系统 */
+  /* 门户配置 tab：子系统上架 / 排序 / 元数据 / 主题配色 / 可见角色
+     （v6.9：外部系统不再从门户新增，统一在「子系统菜单」tab 维护） */
   if ((window.__sysMenuTab || "portal") !== "subs") {
-    return `${header}${tabs}${_renderPortalConfigTab(canEdit, canAdd)}`;
+    return `${header}${tabs}${_renderPortalConfigTab(canEdit)}`;
   }
   /* 子系统菜单 tab：既有三级菜单树原样保留 */
   const menus = _sortedMenus();
@@ -939,8 +940,8 @@ function _sysMenuTabs() {
   const tab = (k, label, hint) =>
     `<span class="sys-menu-tab${cur === k ? " on" : ""}" onclick="switchSysMenuTab('${k}')" title="${hint}">${label}</span>`;
   return `<div class="sys-menu-tabs">` +
-    tab("portal", "🗂 门户配置", "门户卡片：上架 / 排序 / 主题 / 角色，可新增外部系统") +
-    tab("subs", "🧭 子系统菜单", "各子系统内部的三级菜单树") +
+    tab("portal", "🗂 门户配置", "子系统卡：上架 / 排序 / 主题 / 可见角色") +
+    tab("subs", "🧭 子系统菜单", "各子系统的菜单树；外部系统链接也在这里作为外链菜单项维护") +
     `</div>`;
 }
 
@@ -951,19 +952,13 @@ function switchSysMenuTab(tab) {
   else if (typeof window.renderCurView === "function") window.renderCurView();
 }
 
-/** 门户配置 tab：门户卡列表（排序 / 上下架 / 编辑 / 新增外部系统） */
-function _renderPortalConfigTab(canEdit, canAdd) {
+/** 门户配置 tab：子系统卡列表（排序 / 上下架 / 编辑）
+ *  v6.9：门户只放子系统卡——外部系统不再从门户新增，改在「子系统菜单」tab 里
+ *  给对应子系统加一条「外部系统」类型菜单项（同一套菜单 CRUD，权限也随菜单走）。 */
+function _renderPortalConfigTab(canEdit) {
   const apps = typeof getPortalApps === "function" ? getPortalApps() : [];
-  const internalCount = apps.filter((a) => a.kind !== "external").length;
   const tableHtml = apps.length
     ? table(TH.portalCfg, apps, (app, i) => {
-        const isExt = app.kind === "external";
-        const typeBadge = isExt
-          ? `<span class="badge" style="background:#e6f7ff;color:#1890ff;border-color:#91d5ff">外部系统</span>`
-          : `<span class="badge" style="background:#f6ffed;color:#52c41a;border-color:#b7eb8f">内部系统</span>`;
-        const target = isExt
-          ? `<span class="ms-url muted" title="${app.url || ""}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">${app.url || "-"}</span>`
-          : `<code>${app.mod || "-"}</code>`;
         const enabled = app.enabled !== false;
         const statusCell = `<div style="display:flex;gap:6px;flex-wrap:wrap">` +
           (enabled
@@ -977,10 +972,12 @@ function _renderPortalConfigTab(canEdit, canAdd) {
           ? app.roles.map((rk) => `<span class="tag g">${_escape(ROLES[rk] ? ROLES[rk].name : rk)}</span>`).join(" ")
           : '<span class="muted">全部角色</span>';
         /* 主题圆点：提示文案区分「已单独指定」与「跟随板块默认」 */
-        const ptTheme = !isExt && typeof getPortalTheme === "function" ? getPortalTheme(app) : null;
+        const ptTheme = typeof getPortalTheme === "function" ? getPortalTheme(app) : null;
         const themeDot = ptTheme
           ? `<span class="pt-dot" style="background:${ptTheme.base}" title="主题配色：${ptTheme.name}${app.theme ? "" : "（跟随板块默认）"}"></span>`
           : "";
+        const modNode = MODULES[app.mod];
+        const targetCell = `<code>${app.mod || "-"}</code><div style="margin-top:4px"><span class="muted small">${_escape(modNode ? modNode.name : "板块缺失")}</span></div>`;
         const actions = [
           i > 0 && canEdit ? btn("↑", "ghost sm", `movePortalAppBtn('${app.key}', -1)`) : "",
           i < apps.length - 1 && canEdit ? btn("↓", "ghost sm", `movePortalAppBtn('${app.key}', 1)`) : "",
@@ -999,7 +996,7 @@ function _renderPortalConfigTab(canEdit, canAdd) {
               </div>
             </div>
           </td>
-          <td>${typeBadge}<div style="margin-top:4px">${target}</div></td>
+          <td>${targetCell}</td>
           <td>${statusCell}</td>
           <td>${rolesCell}</td>
           <td><span class="muted cell-ell" title="${_escape(app.desc || "")}">${_escape(app.desc || "-")}</span></td>
@@ -1008,8 +1005,8 @@ function _renderPortalConfigTab(canEdit, canAdd) {
     : '<div class="empty">暂无门户卡（种子为空）</div>';
   return `
   ${toolbar(
-    `共 ${apps.length} 张门户卡 · 内部 ${internalCount} · 外部 ${apps.length - internalCount} · 下架后门户不再展示`,
-    canAdd ? btn("+ 新增外部系统", "sm", "openAddPortalApp()") : "",
+    `共 ${apps.length} 张子系统卡 · 下架后门户不再展示；外部系统链接请到「子系统菜单」tab 内维护`,
+    "",
   )}
   ${zone(tableHtml, "🗂 门户卡片配置", "")}`;
 }
@@ -1140,24 +1137,22 @@ function ptThemeColor(input) {
   }
 }
 
-/** 打开门户卡编辑弹窗（名称 / 图标 / 描述 / 状态 / 可见角色 / 外链地址 / 主题配色） */
+/** 打开门户卡编辑弹窗（名称 / 图标 / 描述 / 状态 / 可见角色 / 主题配色）
+ *  v6.9：门户卡只能是子系统卡，不再有外部系统的「跳转链接」字段 */
 function openEditPortalApp(appKey) {
   if (!window.currentCanAction("sys", "sysMenu", "edit")) { toast("您没有编辑门户卡的权限"); return; }
   const app = typeof findPortalApp === "function" ? findPortalApp(appKey) : null;
   if (!app) { toast("门户卡不存在"); return; }
-  const isExt = app.kind === "external";
   const selected = app.roles || [];
   const roleCbs = _portalRoleCbs(selected);
   /* 主题色板按「当前生效主题」预选中：已存 theme 优先，缺省回落板块默认（见 _portalThemeCells） */
-  const effTheme = !isExt && typeof getPortalTheme === "function" ? getPortalTheme(app) : null;
+  const effTheme = typeof getPortalTheme === "function" ? getPortalTheme(app) : null;
   __paThemeTouched = false;
   __paCustomHex = "";
-  const themeRow = (!isExt && typeof PORTAL_THEMES !== "undefined")
+  const themeRow = (typeof PORTAL_THEMES !== "undefined")
     ? formRow("主题配色", `<div class="pt-grid">${_portalThemeCells(app.theme || "", effTheme)}</div>`, false, "首页卡片与对应子系统窗口的主题色；点「自定义」格里的色点即可直接取色，选「默认」按板块默认色（当前卡片未单独指定时即跟随板块）")
     : "";
-  const targetRow = isExt
-    ? formRow("跳转链接", `<input id="paUrl" value="${(app.url || "").replace(/"/g, "&quot;")}" placeholder="https://example.com">`, true, "必须以 http:// 或 https:// 开头")
-    : formRow("指向板块", `<code>${app.mod || "-"}</code>${MODULES[app.mod] ? "（" + MODULES[app.mod].name + "）" : ""}`, false, "内部子系统的菜单结构在「子系统菜单」tab 中维护");
+  const targetRow = formRow("指向板块", `<code>${app.mod || "-"}</code>${MODULES[app.mod] ? "（" + MODULES[app.mod].name + "）" : ""}`, false, "子系统内部的菜单结构（含外部系统链接）在「子系统菜单」tab 中维护");
   openModal(
     modalContent(
       `编辑门户卡 · ${_escape(app.name)}`,
@@ -1167,7 +1162,7 @@ function openEditPortalApp(appKey) {
        ${formRow("运行状态", `<select id="paStatus"><option value="active"${app.status !== "maintenance" ? " selected" : ""}>正常</option><option value="maintenance"${app.status === "maintenance" ? " selected" : ""}>维护中</option></select>`, false)}
        ${targetRow}
        ${themeRow}
-       ${formRow("可见角色", `<div class="fav-manage-items">${roleCbs}</div>`, false, "不勾选 = 全部角色可见；内部卡还受角色权限配置中的模块授权约束")}`,
+       ${formRow("可见角色", `<div class="fav-manage-items">${roleCbs}</div>`, false, "不勾选 = 全部角色可见；另受角色权限配置中的模块授权约束")}`,
       `${btn("取消", "gray", "closeModal()")} ${btn("保存修改", "", `submitEditPortalApp('${appKey}')`)}`,
     ),
     "600px",
@@ -1187,8 +1182,6 @@ function submitEditPortalApp(appKey) {
     status: document.getElementById("paStatus").value,
     roles,
   };
-  const urlEl = document.getElementById("paUrl");
-  if (urlEl) patch.url = urlEl.value.trim();
   /* 主题配色：仅在用户动过色板时写入——未改动则保留原值（含「跟随板块默认」的空值），
      避免只改名 / 改描述就顺手把主题钉成某个预设。写入时：「自定义」取格内取色器色值，
      「默认」= 清除 theme 回落板块默认 */
@@ -1206,50 +1199,9 @@ function submitEditPortalApp(appKey) {
     }
   }
   const ok = window.updatePortalApp(appKey, patch);
-  if (!ok) { toast("保存失败：外链地址必须以 http:// 或 https:// 开头"); return; }
+  if (!ok) { toast("保存失败：请检查名称与主题色"); return; }
   closeModal();
   toast("已保存门户卡配置");
-  replaceView();
-}
-
-/** 打开新增外部系统弹窗（原「只能维护种子」现支持直接新增外链卡） */
-function openAddPortalApp() {
-  if (!window.currentCanAction("sys", "sysMenu", "add")) { toast("您没有新增门户卡的权限"); return; }
-  const roleCbs = _portalRoleCbs([]);
-  openModal(
-    modalContent(
-      "新增外部系统",
-      `${formRow("名称", `<input id="paName" maxlength="20" placeholder="如：项目管理系统">`, true)}
-       ${formRow("图标", `<input id="paIcon" maxlength="4" placeholder="🔗">`, false, "一个 Emoji 字符，默认 🔗")}
-       ${formRow("跳转链接", `<input id="paUrl" placeholder="https://example.com">`, true, "必须以 http:// 或 https:// 开头")}
-       ${formRow("描述", `<textarea id="paDesc" rows="2" maxlength="80" placeholder="一句话说明该系统用途"></textarea>`, false, "展示在门户卡片描述行，最长 80 字")}
-       ${formRow("运行状态", `<select id="paStatus"><option value="active" selected>正常</option><option value="maintenance">维护中</option></select>`, false)}
-       ${formRow("可见角色", `<div class="fav-manage-items">${roleCbs}</div>`, false, "不勾选 = 全部角色可见")}`,
-      `${btn("取消", "gray", "closeModal()")} ${btn("新增", "", "submitAddPortalApp()")}`,
-    ),
-    "600px",
-  );
-}
-
-/** 提交新增外部系统 */
-function submitAddPortalApp() {
-  if (!window.currentCanAction("sys", "sysMenu", "add")) { toast("您没有新增门户卡的权限"); closeModal(); return; }
-  const name = document.getElementById("paName").value.trim();
-  if (!name) { toast("门户卡名称不能为空"); return; }
-  const url = document.getElementById("paUrl").value.trim();
-  if (!/^https?:\/\//i.test(url)) { toast("跳转链接必须以 http:// 或 https:// 开头"); return; }
-  const roles = Array.from(document.querySelectorAll(".portal-role-cb:checked")).map((cb) => cb.value);
-  const key = window.createPortalApp({
-    name,
-    icon: document.getElementById("paIcon").value.trim(),
-    url,
-    desc: document.getElementById("paDesc").value,
-    status: document.getElementById("paStatus").value,
-    roles,
-  });
-  if (!key) { toast("新增失败：请检查名称与链接"); return; }
-  closeModal();
-  toast("已新增外部系统，门户即时展示");
   replaceView();
 }
 

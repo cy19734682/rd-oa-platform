@@ -1,15 +1,17 @@
 /* ========== 主系统门户 · 子系统入口配置 · config-portal.js ==========
- * 职责：定义主系统门户展示的「子系统卡片」种子（内部子系统 + 外部系统），
+ * 职责：定义主系统门户展示的「子系统卡片」种子，
  *   支持 localStorage 持久化（门户配置由「菜单管理 → 门户配置」维护）。
  * 数据模型：
- *   { key, name, icon, kind: "internal"|"external", mod?, url?, enabled, status, order, roles, desc, theme? }
+ *   { key, name, icon, kind: "internal", mod?, enabled, status, order, roles, desc, theme? }
  *     kind=internal：点击进入子系统壳（mod 指向 MODULES 中的板块 key）
- *     kind=external：点击新窗口打开第三方系统（url）
  *     enabled=false：已下架，门户不再展示（可在「菜单管理 → 门户配置」重新上架）
  *     roles 为空数组 = 全角色可见；否则仅列出角色可见
  *     status: "active" 正常 / "maintenance" 维护中
  *     theme（仅内部卡）：主题配色——PORTAL_THEMES 预设 key 或自定义 #RRGGBB，
  *       主系统首页卡片与对应子系统窗口 chrome 均跟随该配色；缺省回落 MODULE_THEME 默认色
+ * v6.9：门户只放「子系统卡」。外部系统（项目管理系统 / 项目看板 / 自动化测试平台）
+ *   不再是门户级外链卡，而是各子系统菜单里的 external 子项（见 config-menu.js），
+ *   因此 kind 恒为 internal；历史 localStorage 里的 external 卡在 loadPortal() 中清理。
  * 本文件必须在 config-menu.js 之后加载（运行时依赖 MODULES）。
  */
 
@@ -106,7 +108,7 @@ function applySubsystemTheme(appKey) {
   let t = null;
   if (typeof findPortalApp === "function") {
     const app = findPortalApp(appKey);
-    if (app && app.kind !== "external" && app.theme) t = resolvePortalTheme(app.theme);
+    if (app && app.theme) t = resolvePortalTheme(app.theme);
   }
   if (!t) t = PORTAL_THEME_MAP[_SUB_DEFAULT_THEME[appKey] || "blue"];
   if (!t) return;
@@ -139,24 +141,6 @@ const DEFAULT_PORTAL_APPS = [
     status: "active", order: 4, roles: [],
     desc: "月度 / 年度绩效考核、互评任务与年终考核汇总",
   },
-  {
-    key: "ext-pms", name: "项目管理系统", icon: "🗂️", kind: "external",
-    url: "http://192.168.1.19/devsuite/#home",
-    status: "active", order: 5, roles: [],
-    desc: "公司内部项目管理平台 DevSuite，已打通 SSO 免二次登录",
-  },
-  {
-    key: "ext-board", name: "项目看板", icon: "📊", kind: "external",
-    url: "http://192.168.215.23/axshare/ppb/index.html",
-    status: "active", order: 6, roles: [],
-    desc: "项目进度看板原型（Axure 在线原型）",
-  },
-  {
-    key: "ext-auto", name: "自动化测试平台", icon: "🤖", kind: "external",
-    url: "http://192.168.215.23/pd/uml/index.html",
-    status: "active", order: 7, roles: [],
-    desc: "UI 自动化测试平台，支持用例编排与执行",
-  },
 ];
 
 /** 运行时门户配置（loadPortal 后可用；顶层 let 语义同其他 config 模块） */
@@ -173,6 +157,16 @@ function _normalizePortalOrders() {
   PORTAL_APPS.sort((a, b) => (a.order || 0) - (b.order || 0));
   PORTAL_APPS.forEach((a, i) => { a.order = i + 1; });
   savePortalApps(PORTAL_APPS);
+}
+
+/** v6.9 迁移：外部系统已回挂到各子系统菜单（type=external 子项），门户只保留子系统卡。
+ *  历史 localStorage 里遗留的 kind=external 卡（ext-pms / ext-board / ext-auto 及
+ *  用户在旧版「新增外部系统」里自建的卡）在这里一次性清掉，返回是否发生了变化。
+ *  一次性语义：清理后 PORTAL_APPS 里不再有 external，后续加载该函数为 no-op。 */
+function _dropLegacyExternalApps() {
+  const before = PORTAL_APPS.length;
+  PORTAL_APPS = PORTAL_APPS.filter((a) => a && a.kind !== "external");
+  return PORTAL_APPS.length !== before;
 }
 
 /** 加载门户配置：无持久化数据时写回种子 */
@@ -195,6 +189,7 @@ function loadPortal() {
     merged.sort((a, b) => (a.order || 0) - (b.order || 0));
     PORTAL_APPS = merged;
     PORTAL_APPS.forEach(_normalizePortalApp);
+    _dropLegacyExternalApps();
     savePortalApps(PORTAL_APPS);
   } else {
     PORTAL_APPS = JSON.parse(JSON.stringify(DEFAULT_PORTAL_APPS));
@@ -224,17 +219,14 @@ function savePortalApps(list) {
   }
 }
 
-/** 门户卡对当前角色是否可见（roles 空 = 全角色；内部卡另受模块权限过滤；下架卡不可见）
+/** 门户卡对当前角色是否可见（roles 空 = 全角色；另受模块权限过滤；下架卡不可见）
  *  sysAdmin 为超级用户，不受 roles 白名单约束（与 canAccessModule / canAction 的全权限约定一致） */
 function _portalAppAllowed(app) {
   if (!app) return false;
   if (app.enabled === false) return false;
   const role = typeof CUR_ROLE !== "undefined" ? CUR_ROLE : "";
   if (role !== "sysAdmin" && app.roles && app.roles.length && app.roles.indexOf(role) < 0) return false;
-  if (app.kind === "internal") {
-    return !!app.mod && typeof canAccessModule === "function" && canAccessModule(app.mod);
-  }
-  return true;
+  return !!app.mod && typeof canAccessModule === "function" && canAccessModule(app.mod);
 }
 
 /** 门户状态文案 */
@@ -244,7 +236,7 @@ function _portalStatusText(status) {
 
 /* ---------- 门户卡 CRUD（供「菜单管理 → 门户配置」使用） ---------- */
 
-/** 更新门户卡字段（名称/图标/描述/状态/可见角色/外链地址/主题配色），持久化；返回是否成功 */
+/** 更新门户卡字段（名称/图标/描述/状态/可见角色/主题配色），持久化；返回是否成功 */
 function updatePortalApp(key, patch) {
   const app = PORTAL_APPS.find((a) => a.key === key);
   if (!app) return false;
@@ -258,50 +250,14 @@ function updatePortalApp(key, patch) {
   if (p.desc !== undefined) app.desc = String(p.desc == null ? "" : p.desc);
   if (p.status !== undefined) app.status = p.status === "maintenance" ? "maintenance" : "active";
   if (p.roles !== undefined) app.roles = Array.isArray(p.roles) ? p.roles.slice() : [];
-  if (p.url !== undefined) {
-    const url = String(p.url == null ? "" : p.url).trim();
-    /* 外链卡必须保留合法地址，避免下架/清空后卡片点击无响应 */
-    if (app.kind === "external" && !/^https?:\/\//i.test(url)) return false;
-    app.url = url;
-  }
-  /* 主题配色仅内部卡可设；取值须为预设 key 或自定义 #RRGGBB，空串表示清除（回落默认） */
+  /* 主题配色：取值须为预设 key 或自定义 #RRGGBB，空串表示清除（回落板块默认） */
   if (p.theme !== undefined) {
-    if (app.kind === "external") return false;
     if (p.theme === "" || p.theme === null) delete app.theme;
     else if (!resolvePortalTheme(p.theme)) return false;
     else app.theme = String(p.theme).trim().toLowerCase();
   }
   savePortalApps(PORTAL_APPS);
   return true;
-}
-
-/** 新增外部系统门户卡（「菜单管理 → 门户配置」原只能维护种子，无法新增外链）
- * 自动生成 key（ext-<时间戳36进制>），order 追加到末尾，默认已上架。
- * @param {object} opts { name, icon, url, desc, roles, status }
- * @returns {string|null} 新卡 key（失败返回 null） */
-function createPortalApp(opts) {
-  const o = opts || {};
-  const name = String(o.name == null ? "" : o.name).trim();
-  const url = String(o.url == null ? "" : o.url).trim();
-  if (!name) return null;
-  if (!/^https?:\/\//i.test(url)) return null;
-  const key = "ext-" + Date.now().toString(36);
-  const maxOrder = PORTAL_APPS.reduce((mx, a) => Math.max(mx, a.order || 0), 0);
-  const app = {
-    key,
-    name,
-    icon: String(o.icon == null ? "" : o.icon).trim() || "🔗",
-    kind: "external",
-    url,
-    desc: String(o.desc == null ? "" : o.desc),
-    status: o.status === "maintenance" ? "maintenance" : "active",
-    enabled: true,
-    order: maxOrder + 1,
-    roles: Array.isArray(o.roles) ? o.roles.slice() : [],
-  };
-  PORTAL_APPS.push(app);
-  savePortalApps(PORTAL_APPS);
-  return key;
 }
 
 /** 上架 / 下架门户卡（enabled 取反），持久化；返回操作后的 enabled 值（找不到返回 null） */
@@ -335,7 +291,6 @@ window.savePortalApps = savePortalApps;
 window.updatePortalApp = updatePortalApp;
 window.togglePortalAppEnabled = togglePortalAppEnabled;
 window.movePortalApp = movePortalApp;
-window.createPortalApp = createPortalApp;
 window.getPortalTheme = getPortalTheme;
 window.resolvePortalTheme = resolvePortalTheme;
 window.applySubsystemTheme = applySubsystemTheme;

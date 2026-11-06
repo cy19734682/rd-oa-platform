@@ -319,22 +319,87 @@ function _dateProgressHtml() {
   return NAV.sideDateProgress.replace("{wd}", wd).replace("{yd}", yd).replace("{left}", left);
 }
 
-/** crumb 公告条（v5.1：首页面包屑行只保留公告，去掉发布人与发布时间；
- *  v5.9：去掉「查看更多」，只展示最新一条，点击标题看详情）
- * 由 router.js renderCrumb 首页分支调用（window 守卫）；无公告时返回空串。
- * 点击标题打开详情并标记已读。 */
-function _crumbNoticeHtml() {
+/** 主区下半右栏 · 系统公告列表（v7.1：单条公告条改为列表；v7.2 移到主区下半；
+ *  v7.3 与「我的待办」左右互换，本面板改到右侧）
+ *  - 顺序沿用 getPublishedNotices（置顶优先 → 发布时间倒序），逐条渲染；
+ *  - 每行：未读红点 + 类型标签（置顶显示「置顶」）+ 标题（单行省略）+ 日期 + ›；
+ *    整行可点 → 打开详情并标记已读，关闭后首页重渲染、红点消失；
+ *  - v7.3 行高收紧为固定 36px（去弹性拉伸），列表超过约 8 行时在列表内滚动；
+ *  - v7.4 页头去掉「共 N 条 · M 条未读」计数（未读状态由每行红点表达），
+ *    面板与左栏由 grid stretch 拉成等高，列表区域吃掉剩余高度（行高不变）；
+ *  - 无已发布公告时返回空串，主区下半只渲染待办面板（:only-child 独占整行）。
+ * 由 views.js renderHome 调用（window 守卫）。 */
+function _portalNoticeList() {
   const notices = window.getPublishedNotices ? window.getPublishedNotices() : [];
   if (!notices.length) return "";
-  const n = notices[0];
   const readIds = window.getReadNoticeIds ? window.getReadNoticeIds() : [];
-  const isRead = readIds.indexOf(n.id) >= 0;
-  return `<div class="crumb-notice">
-    <span class="crumb-notice-main">
-      <span class="crumb-notice-dot" style="visibility:${isRead ? "hidden" : "visible"}"></span>
-      <span class="crumb-notice-tag">📢 公告</span>
-      <span class="crumb-notice-title" onclick="openNoticeDetail('${n.id}')" title="${_escape(n.title)}">${n.top ? '<span class="tag warn" style="margin-right:6px">置顶</span>' : ""}${_escape(n.title)}</span>
-    </span>
+  const types = window.NOTICE_TYPES || {};
+  const rows = notices.map((n) => {
+    const isRead = readIds.indexOf(n.id) >= 0;
+    const dateStr = typeof _fmtDate === "function" ? _fmtDate(n.createdAt) : "";
+    const tag = n.top
+      ? '<span class="pnt-tag top">置顶</span>'
+      : `<span class="pnt-tag">${types[n.type] || "通知"}</span>`;
+    return `<li class="pnt-item" onclick="openNoticeDetail('${n.id}')" title="${_escape(n.title)}">
+      <span class="pnt-dot" style="visibility:${isRead ? "hidden" : "visible"}"></span>
+      ${tag}
+      <span class="pnt-title">${_escape(n.title)}</span>
+      <span class="pnt-date">${dateStr}</span>
+      <span class="pnt-arrow">›</span>
+    </li>`;
+  }).join("");
+  /* v7.4：页头不再显示「共 N 条 · M 条未读」——未读状态由每行左侧红点表达，
+   * 条数属于统计信息，与下方工作台内容无关，去掉后页头只留标题更安静 */
+  return `<div class="portal-notices">
+    <div class="pnt-head">
+      <span class="pnt-head-title">📢 系统公告</span>
+    </div>
+    <ul class="pnt-list">${rows}</ul>
+  </div>`;
+}
+
+/** 主区下半左栏 · 我的待办面板（v7.2 新增，v7.3 移到左侧）
+ *  与公告并排：左边「要做什么」（可操作），右边「要知道什么」（只读）。
+ *  数据源统一取 views.js 的 _collectTodos()——与顶栏铃铛、侧栏待办徽标同源，
+ *  不新增任何存储；每条点击直达办理位置（onClick 由 _todoOnClick 生成，
+ *  同窗口走模态、跨子系统走新开窗口）。
+ *  - 最多展示 8 条，超出在列表内滚动；页头右侧「全部 ›」打开铃铛里的完整待办弹窗；
+ *  - v7.3 每条右侧展示来源单据的创建日期（t.date，无来源单据时不渲染该列）；
+ *  - v7.4 页头去掉「共 N 条」，只保留「全部 ›」入口（条数在铃铛面板里看）；
+ *  - 待办为 0 时不返回空串，而是给一张「当前没有待处理事项」的正向空态卡。 */
+function _portalTodoPanel() {
+  const todos = typeof _collectTodos === "function" ? _collectTodos() : [];
+  const head = `
+    <div class="pdt-head">
+      <span class="pdt-head-title">📌 我的待办</span>
+      ${todos.length ? '<span class="pdt-all" onclick="showLoginTodoModal(true)">全部 ›</span>' : ""}
+    </div>`;
+  if (!todos.length) {
+    /* 空态卡：与公告栏同为 grid 子项，默认 stretch 自动等高，无需额外声明 */
+    return `<div class="portal-todos is-empty">
+      ${head}
+      <div class="pdt-empty"><span class="pdt-empty-ico">✓</span>当前没有待处理事项</div>
+    </div>`;
+  }
+  const rows = todos.slice(0, 8).map((t) => {
+    /* v7.3：右侧补一列创建日期（来源单据的 createdAt，如考核表创建时间 / 案例提交时间）；
+     * 聚合类待办（停用账号）没有来源单据，dateStr 为空时不输出该列，行内自然收紧 */
+    const dateStr = t.date && typeof _fmtDate === "function" ? _fmtDate(t.date) : "";
+    return `
+    <li class="pdt-item" onclick="${t.onClick}" title="${_escape(t.title)}${t.desc ? " · " + _escape(t.desc) : ""}">
+      <span class="pdt-bar" style="background:${t.color}"></span>
+      <span class="pdt-icon" style="background:${t.color}1a;color:${t.color}">${t.icon}</span>
+      <span class="pdt-body">
+        <span class="pdt-title">${_escape(t.title)}</span>
+        <span class="pdt-desc">${_escape(t.desc)}</span>
+      </span>
+      ${dateStr ? `<span class="pdt-date">${dateStr}</span>` : ""}
+      <span class="pdt-arrow">›</span>
+    </li>`;
+  }).join("");
+  return `<div class="portal-todos">
+    ${head}
+    <ul class="pdt-list">${rows}</ul>
   </div>`;
 }
 
@@ -361,21 +426,26 @@ function openNoticeDetail(id) {
 /* ========== 我的常用应用（首页左侧栏紧凑磁贴） ==========
  * 数据结构（批次三起两级化）：{ app, mod, sub }
  *   app = 所属子系统（门户卡 key；非子系统的旧菜单项为 ""）
- *   mod/sub = 页面在菜单树中的位置；外部系统卡 mod/sub 均为 ""
- * 旧数据 { mod, sub } 自动迁移：内部子系统按 mod 反查补 app，
- *   已迁出板块的旧外链项（pms/board/sub-auto）按迁移表转到新门户卡。
+ *   mod/sub = 页面在菜单树中的位置；外链菜单项同样落在 mod/sub 上（type=external）
+ * 旧数据 { mod, sub } 自动迁移：内部子系统按 mod 反查补 app。
+ * v6.9：外部系统回挂子系统菜单后，历史数据里固定过的外链门户卡
+ *   （ext-pms / ext-board / ext-auto）迁移到对应的外链菜单项位置。
  */
 
 const FAV_KEY_PREFIX = "oa_fav_apps::";
 const FAV_DEFAULT_COUNT = 4;
-/** 旧外链子系统 key → 新门户卡 key（批次二外部系统迁出板块） */
-const FAV_LEGACY_EXT = { pms: "ext-pms", board: "ext-board", "sub-auto": "ext-auto" };
+/** 旧版外链门户卡 key → 现在的外链菜单项位置 [mod, sub]（v6.9 迁移表） */
+const FAV_LEGACY_EXT = {
+  "ext-pms": ["proj", "pms"],
+  "ext-board": ["proj", "board"],
+  "ext-auto": ["dev", "sub-auto"],
+};
 
 function _favKey() {
   return FAV_KEY_PREFIX + (window.CURR_ACCT || "guest");
 }
 
-/** 全部可选应用（当前角色可见：内部子系统页面 + 外链门户卡，按板块顺序） */
+/** 全部可选应用（当前角色可见的子系统页面，含外链菜单项，按板块顺序） */
 function _favCandidates() {
   const out = [];
   Object.keys(MODULES).forEach((mk) => {
@@ -392,31 +462,22 @@ function _favCandidates() {
       url: s.url || "",
     }));
   });
-  /* 外链门户卡（批次二起外部系统迁出板块，作为整体固定到常用应用） */
-  if (typeof getPortalApps === "function") {
-    getPortalApps().filter((a) => a.kind === "external").forEach((a) => {
-      if (typeof _portalAppAllowed === "function" && !_portalAppAllowed(a)) return;
-      out.push({
-        app: a.key, mod: "", sub: "",
-        name: a.name, icon: a.icon || "🔗",
-        modName: "外部系统", type: "external", url: a.url || "",
-      });
-    });
-  }
   return out;
 }
 
-/** 旧 fav 项结构迁移：补 app 字段；命中的旧外链项转为新门户卡 {app, "", ""} */
+/** 旧 fav 项结构迁移：补 app 字段；旧外链门户卡 → 对应外链菜单项；失效项返回 null 由调用方过滤 */
 function _favMigrateItem(f, cands) {
   if (!f || typeof f !== "object") return null;
+  const hit = (mod, sub) => cands.some((c) => c.mod === mod && c.sub === sub);
+  /* 旧结构里的外链门户卡：{ app: "ext-pms", mod: "", sub: "" } */
+  if (f.app && FAV_LEGACY_EXT[f.app] && !f.mod) {
+    const [mod, sub] = FAV_LEGACY_EXT[f.app];
+    return hit(mod, sub) ? { app: mod, mod, sub } : null;
+  }
   if (f.app !== undefined && f.mod !== undefined && f.sub !== undefined) {
     return { app: f.app, mod: f.mod, sub: f.sub };
   }
   if (f.mod && f.sub) {
-    const live = cands.some((c) => c.mod === f.mod && c.sub === f.sub);
-    if (!live && FAV_LEGACY_EXT[f.sub] && typeof findPortalApp === "function" && findPortalApp(FAV_LEGACY_EXT[f.sub])) {
-      return { app: FAV_LEGACY_EXT[f.sub], mod: "", sub: "" };
-    }
     if (typeof _isSubsystemKey === "function" && _isSubsystemKey(f.mod)) {
       return { app: f.mod, mod: f.mod, sub: f.sub };
     }
@@ -456,10 +517,7 @@ function openFavApp(app, mod, sub) {
     app = (typeof _isSubsystemKey === "function" && _isSubsystemKey(mod)) ? mod : "";
   }
   if (!mod) {
-    /* 外链门户卡：新窗口打开 */
-    const card = typeof findPortalApp === "function" ? findPortalApp(app) : null;
-    if (card && card.url) { window.open(card.url, "_blank"); return; }
-    window.toast("该外部系统地址无效或已下架");
+    window.toast("该应用已失效，请重新在「管理」里选择");
     return;
   }
   if (!canAccessModule(mod)) {
@@ -483,7 +541,7 @@ function openFavApp(app, mod, sub) {
   }
 }
 
-/** 常用应用管理弹窗（勾选增删；内部页面按板块分组，外链门户卡独立分组） */
+/** 常用应用管理弹窗（勾选增删；按板块分组，外链菜单项带「外链」徽章） */
 function openFavManage() {
   const cands = _favCandidates();
   const fav = getFavApps();
@@ -497,15 +555,7 @@ function openFavManage() {
     }).join("");
     return items ? `<div class="fav-manage-group"><div class="fav-manage-group-title">${_escape(MODULES[mk].name)}</div><div class="fav-manage-items">${items}</div></div>` : "";
   });
-  /* 外链门户卡分组（mod 为空即门户级外部系统） */
-  const extItems = cands.filter((c) => !c.mod).map((c) => {
-    const key = c.app + "::" + c.mod + "::" + c.sub;
-    return `<label class="fav-manage-item"><input type="checkbox" class="fav-cb" value="${key}" ${favSet[key] ? "checked" : ""}> <span class="fav-manage-icon">${c.icon}</span>${_escape(c.name)}<span class="tag ext">外链</span></label>`;
-  }).join("");
-  if (extItems) {
-    groups.push(`<div class="fav-manage-group"><div class="fav-manage-group-title">外部系统</div><div class="fav-manage-items">${extItems}</div></div>`);
-  }
-  const body = `<div style="font-size:13px;color:var(--sub);margin-bottom:12px">勾选需要固定在「我的常用应用」的子系统页面或外部系统（最多 8 个）</div>
+  const body = `<div style="font-size:13px;color:var(--sub);margin-bottom:12px">勾选需要固定在「我的常用应用」的子系统页面（含外链菜单项，最多 8 个）</div>
     <div id="favManageList" style="max-height:52vh;overflow-y:auto">${groups.join("") || '<div class="empty">暂无可选应用</div>'}</div>`;
   const foot = `${btn("取消", "gray", "closeModal()")} ${btn("💾 保存", "", "saveFavFromModal()")}`;
   openModal(modalContent("🧭 管理我的常用应用", body, foot), "560px");
@@ -530,7 +580,7 @@ function saveFavFromModal() {
   }
 }
 
-/** 侧栏 · 常用应用：3 列紧凑磁贴（外链卡带 ↗ 标记；管理复用常用应用管理弹窗） */
+/** 侧栏 · 常用应用：2 列紧凑磁贴（v6.8 起由 3 列改 2 列；外链菜单项带 ↗ 标记；管理复用常用应用管理弹窗） */
 function _portalSideFav() {
   const fav = getFavApps();
   const cands = _favCandidates();
@@ -560,26 +610,6 @@ function _portalSideSys() {
   const isAdmin = typeof CUR_ROLE !== "undefined" && CUR_ROLE === "sysAdmin";
   if (!isAdmin) return "";
   return `<div class="portal-side-link" onclick="selectModule('sys')" title="进入系统管理">${NAV.sideSys}<span class="portal-side-tag">${NAV.sideAdminTag}</span></div>`;
-}
-
-/* ---------- 侧栏 · 待办摘要行（v5.2） ----------
- * 紧凑摘要形态（非 v4 已下线的待办完整列表）：复用 _collectTodos() 的跨模块
- * 待办聚合（按角色），点击弹铃铛待办面板（showLoginTodoModal(true)）。
- * 0 条时展示置灰兜底文案，不绑点击（面板本身对空列表不弹窗）。 */
-function _portalSideTd() {
-  const todos = typeof _collectTodos === "function" ? _collectTodos() : [];
-  const count = todos.length;
-  if (count > 0) {
-    return `<div class="portal-side-td" onclick="showLoginTodoModal(true)" title="点击查看全部待办">
-      <span class="portal-side-td-label">${NAV.sideTd}</span>
-      <span class="portal-side-td-num">${count} ${NAV.sideTdUnit}</span>
-      <span class="portal-side-td-go">›</span>
-    </div>`;
-  }
-  return `<div class="portal-side-td zero" title="当前没有待处理事项">
-    <span class="portal-side-td-label">${NAV.sideTd}</span>
-    <span class="portal-side-td-none">${NAV.sideTdNone}</span>
-  </div>`;
 }
 
 /* ---------- 侧栏 · 最近访问（v5.2） ----------
@@ -649,9 +679,9 @@ window.openFavManage = openFavManage;
 window.saveFavFromModal = saveFavFromModal;
 window.getFavApps = getFavApps;
 window.saveFavApps = saveFavApps;
-window._crumbNoticeHtml = _crumbNoticeHtml;
+window._portalNoticeList = _portalNoticeList;
+window._portalTodoPanel = _portalTodoPanel;
 window._portalSideSys = _portalSideSys;
-window._portalSideTd = _portalSideTd;
 window._portalSideRecent = _portalSideRecent;
 window.getRecentVisits = getRecentVisits;
 window.recordRecentVisit = recordRecentVisit;

@@ -79,28 +79,27 @@ function getFirstAccessibleModule() {
 }
 
 /* ---------- 渲染面包屑（可点击跳转）+ 右上角返回条 ----------
- * 主系统门户：      crumb 公告条（最新一条通知，v5 起不再显示「主系统」一级）
- * 主系统内页面：    主系统 / <b>系统管理</b>            + 「← 返回主系统」
+ * 主系统门户：      <b>工作台</b>（v7.0 起公告迁出 crumb，恢复常规单级形态；
+ *                    v7.8 一级文案由「主系统」改为「工作台」，取 NAV.crumbPortal）
+ * 主系统内页面：    工作台 / <b>系统管理</b>            + 「← 返回主系统」
  * 子系统窗口首页：  <b>项目管理</b>（v5.5 起不显示「主系统」一级，与主系统同构）
  * 子系统窗口页：    研发公共 / <b>标准库</b>            （无返回条，回门户走顶栏 Logo）
  * 三级子系统页：    研发公共 / 考核表 / <b>月度考核</b>  + 「← 返回考核表」
- * 搜索页：          主系统 / <b>搜索结果</b>「关键词」
+ * 搜索页：          工作台 / <b>搜索结果</b>「关键词」
  * 注：子系统窗口中一级为当前子系统名（点击回本子系统首页），回主门户统一走
  *     顶栏 Logo（与主系统「点 Logo 回门户」行为一致）；
- *     公告条仅在主系统首页渲染（_crumbNoticeHtml 定义在 views-portal.js，
- *     经 window 守卫调用；子系统窗口不展示；无公告时首页 crumb 为空）。
+ *     系统公告已不在 crumb 渲染（v7.0），改为首页主区顶部公告条
+ *     （_portalNoticeList 定义在 views-portal.js，经 window 守卫调用）。
  */
 function renderCrumb() {
   const el = document.getElementById("crumb");
   if (!el) return;
   const sep = '<span class="crumb-sep">/</span>';
   const inSub = !!(typeof window !== "undefined" && window.__SUB_KEY);
-  /* v5.9：首页 crumb 用 is-home 标记——首页公告条左右内边距 290px（与首页主区列对齐），
-   * 其余页面面包屑仍为常规 20px。
-   * v6.6：搜索结果页不是首页——__searchQuery 非空时不打 is-home，
-   *       否则搜索页（curModule 仍停在 home）会误用首页的 290px 内边距。 */
-  const onHome = !__searchQuery && (curModule === "home" || !curModule);
-  el.className = "crumb" + (onHome ? " is-home" : "");
+  /* v7.0：公告从面包屑行迁到主区顶部（views-portal.js _portalNoticeList，v7.1 起为列表），
+   *       首页 crumb 恢复常规单级形态；v7.8 起一级文案为「工作台」，is-home 的
+   *       290px 内边距标记早已取消。 */
+  el.className = "crumb";
 
   /* 独立搜索页：面包屑与模块解耦，逐级均可回到来源页
    * v5.5：子系统窗口一级为本子系统名（与 crumb 规范一致，不出现「主系统」） */
@@ -115,10 +114,9 @@ function renderCrumb() {
   const nodes = [];
 
   if (curModule === "home" || !curModule) {
-    /* v5：主系统首页 crumb 去掉「主系统」一级，只保留最新一条公告
-     * （子系统窗口不展示，公告属主系统；无公告时 crumb 为空） */
-    const notice = (!inSub && window._crumbNoticeHtml) ? _crumbNoticeHtml() : "";
-    el.innerHTML = notice;
+    /* v7.0：公告搬走后首页恢复常规单级面包屑（不可点，当前就在这一层）；
+     * v7.8：文案为「工作台」= NAV.crumbPortal */
+    el.innerHTML = `<div class="crumb-links"><b>${NAV.crumbPortal}</b></div>`;
     return;
   }
 
@@ -242,13 +240,11 @@ function goHome() {
 }
 
 /* ---------- 新窗口打开子系统（门户内部卡 / 常用应用 / 搜索进入等统一入口） ----------
- * 校验门户卡存在性与模块权限后 window.open 独立页面；外部卡直接打开外链 */
+ * 校验门户卡存在性与模块权限后 window.open 独立页面。
+ * v6.9：门户里只有子系统卡，外链改由子系统菜单的 external 子项直接 window.open
+ * （见 selectSub / selectSubSub / _shCardHtml），这里不再处理外链卡。 */
 function openSubsystem(appKey, viewKey) {
   const app = typeof findPortalApp === "function" ? findPortalApp(appKey) : null;
-  if (app && app.kind === "external") {
-    if (app.url) window.open(app.url, "_blank");
-    return;
-  }
   const modKey = app ? app.mod : appKey;
   if (!modKey || !MODULES[modKey]) return;
   if (!canAccessModule(modKey)) {
